@@ -1,6 +1,8 @@
-In the below visualisation, we consider 100 simulations of a traveller who intends to catch a flight. In each simulation, the passenger is infected with a viral disease and is subject to scanning which might include thermal scanners (to detect fever) and a follow-up risk-assessment questionnaire to determine if the traveller has recently been in an area where the disease is known to be present.
+<br/>
+Given the scenario set out on the left, consider 100 infected air travellers who would arrive at their destination infected. This simulation calculates how many of those 100 travellers are likely to be detected via <b><span style="color:#66C2A5"> exit screening on departure</span></b>, present with <b><span style="color:#E78AC3">severe disease during travel</span></b>, be detected via <b><span style="color:#8DA0CB">entry screening on arrival</span></b> or <b><span style="color:#FC8D62">not be detected</span></b>.
 
-Exit screening occurs prior to the travel and entry screening upon arrival at the flight's destination. The sensitivity of the screening process is the probability that the screening will detect the disease if the traveller truly has the disease.
+NB: These results are based on a stochastic simulation, and so there may be small variations in the number of travellers in each group when the same parameters are used twice.
+<br/><br/>
 
-Because each country has its own screening processes, we let the sensitivity be different at each end of the journey. If the exit sensitivity is 1, then all infected travellers will be <span style="color:#66C2A5">caught pre-flight</span> and should not be allowed to travel. Passengers who become symptomatic during the flight may be  <span style="color:#8DA0CB">detected at arrival by entry screening</span>. Passengers who become symptomatic after arrival will <span style="color:#FC8D62">not be detected</span> by either screening.
+
 
