@@ -24,3 +24,5 @@ Users may adjust the following parameters:
 * mean and variance of the probability distribution describing time between onset of symptoms and severe symptoms
 * sensitivity of exit screening
 * sensitivity of entry screening
+
+This work is currently licensed under an [MIT license](LICENSE)
