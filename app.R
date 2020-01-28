@@ -15,8 +15,9 @@ suppressPackageStartupMessages({
   library(furrr)
   #install.packages("emojifont")
   library(emojifont)
-  library(cowplot)
-
+  #library(cowplot)
+  library(gridExtra)
+  
 })
 
 source("utils.R")
@@ -44,7 +45,8 @@ ui <- list(
   hr { margin:5px; border-top: 1px solid grey; }
 "),
   fluidPage(
-    titlePanel(""),
+    titlePanel("Effectiveness of airport screening at detecting infected travellers"),
+    shiny::includeMarkdown("date_stamp.md"),
     sidebarLayout(
       sidebarPanel(
         #tags$label(class="h3",)
@@ -80,19 +82,19 @@ ui <- list(
         )
         
       ),
-      mainPanel(
-        h1("Effectiveness of airport screening at detecting infected travellers"),
-        shiny::includeMarkdown("date_stamp.md"),
-        tabsetPanel(type = "tabs",
+      mainPanel(               
+                                tabsetPanel(type = "tabs",
                     tabPanel(title = "Plot",
-                             fluidRow(shiny::includeMarkdown("waffle_description.md")),
-                             fluidRow(uiOutput("waffle_plot"))),
-                             
+                             (shiny::includeMarkdown("waffle_description.md")),
+                             fluidRow(uiOutput("waffle_plot")),
+                             shiny::includeMarkdown("density_description.md"),
+                             fluidRow(uiOutput("density_plot"))),
+                    
                     tabPanel(title = "Model",
                              fluidRow(shiny::includeMarkdown("assumptions.md"))),
                     tabPanel(title = "References",
                              shiny::includeMarkdown("references.md"))
-          )
+        )
         
       )
     )
@@ -102,7 +104,7 @@ ui <- list(
   #),
   #fluidPage(title = "References",
   #          fluidRow(shiny::includeMarkdown("references.md"))
-  )
+)
 
 
 server <- function(input, output, session){
@@ -110,22 +112,22 @@ server <- function(input, output, session){
   observe({
     default=input$pathogen
     
-      updateNumericInput(session,"mu_inc",
-                        value = pathogen %>% 
-                          filter(name==default) %>% pull(mu_inc))
-      updateNumericInput(session,"sigma_inc",
-                         value = pathogen %>% 
-                           filter(name==default) %>% pull(sigma_inc))
-      updateNumericInput(session,"mu_inf",
-                         value = pathogen %>% 
-                           filter(name==default) %>% pull(mu_inf))
-      updateNumericInput(session,"sigma_inf",
-                         value = pathogen %>% 
-                           filter(name==default) %>% pull(sigma_inf))
-      
-    }
+    updateNumericInput(session,"mu_inc",
+                       value = pathogen %>% 
+                         filter(name==default) %>% pull(mu_inc))
+    updateNumericInput(session,"sigma_inc",
+                       value = pathogen %>% 
+                         filter(name==default) %>% pull(sigma_inc))
+    updateNumericInput(session,"mu_inf",
+                       value = pathogen %>% 
+                         filter(name==default) %>% pull(mu_inf))
+    updateNumericInput(session,"sigma_inf",
+                       value = pathogen %>% 
+                         filter(name==default) %>% pull(sigma_inf))
+    
+  }
   )
-
+  
   
   waffle_df <- reactive({
     
@@ -194,7 +196,7 @@ server <- function(input, output, session){
     waffle_plot <- ggplot(waffle_data,
                           aes(x = x, y = y, colour = desc_comb)) + 
       geom_raster(aes(fill = desc_comb),
-                alpha = 0.2) +
+                  alpha = 0.2) +
       geom_text(aes(label=label),
                 family="fontawesome-webfont",
                 size=6,
@@ -216,41 +218,61 @@ server <- function(input, output, session){
             legend.text     = element_text(size=12)) +
       guides(color=guide_legend(ncol=1)) 
     
+    waffle_plot
+    
+  })
+  
+  output$densityplot <- renderPlot(expr = {
+    
     period_plot_data <- nat_hist_periods()
     
-    inc_period_plot  <- ggplot(period_plot_data,aes(x=inc_period)) + 
+    period_plot_data <- mutate(period_plot_data,
+                               severe_period = 
+                                 inf_period + inc_period) %>%
+      tidyr::pivot_longer(names_to = "Period",
+                          cols = everything(),
+                          values_to = "value") %>%
+      mutate(Period = factor(Period,
+                             levels = c("inc_period",
+                                        "inf_period",
+                                        "severe_period"),
+                             labels = c("Infection to onset",
+                                        "Onset to severe",
+                                        "Infection to severe")))
+    
+    
+    period_plot <- ggplot(data = period_plot_data,
+                          aes(x = value)) +
       geom_density(fill  = "lightskyblue",
                    color = "lightskyblue",
                    alpha = 0.5) +
-      labs(x="Infection to onset (days)") + theme_minimal() +
-      ylab("Density") 
-    inf_period_plot  <- ggplot(period_plot_data, aes(x=inf_period)) + 
-      geom_density(fill  = "lightskyblue",
-                   color = "lightskyblue",
-                   alpha = 0.5) +
-      labs(x="Onset to severe (days)") + theme_minimal() +
-      ylab("Density")
+      labs(x="Time (days)") + theme_minimal() +
+      ylab("Density")  +
+      facet_grid(. ~ Period) +
+      geom_vline(data = period_plot_data %>%
+                   group_by(Period) %>%
+                   summarise(mean = mean(value)),
+                 aes(xintercept = mean),
+                 lty = 2) +
+      labs(title = "Vertical lines represent mean time to event") +
+      theme(plot.title = element_text(hjust = 0.5))
     
+    period_plot
     
-    plots <- align_plots(waffle_plot, inc_period_plot,
-                         align = 'v', axis = 'l')
-    # then build the bottom row
-    bottom_row <- plot_grid(plots[[2]], inf_period_plot)
-    
-    # then combine with the top row for final plot
-    plot_grid(plots[[1]], bottom_row, ncol = 1,
-              rel_heights = c(3,2))
-    
-  },
+  }, execOnResize = FALSE)
   
-
+  
   height = function() {
     session$clientData$output_waffleplot_width
   }
-  )
+  
   
   output$waffle_plot <- renderUI({
-    plotOutput("waffleplot",height="auto")
+    plotOutput("waffleplot")
+  })
+  
+  output$density_plot <- renderUI({
+    plotOutput("densityplot", width = "100%", height = "2in")
   })
 }
 

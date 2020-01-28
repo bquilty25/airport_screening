@@ -1,12 +1,27 @@
 
+moment_match <- function(mean, var){
+  list(alpha = mean^2/var,
+       beta  = mean/var) 
+}
+
 time_to_event <- function(n, mean, var){
   if (var > 0){
-    alpha = mean^2/var
-    beta  = mean/var
-    return(rgamma(n, shape = alpha, rate = beta))
+    parms <- moment_match(mean, var)
+    return(rgamma(n, shape = parms$alpha, rate = parms$beta))
   } else{
     return(rep(mean, n))
   }
+}
+
+generate_histories <- function(input){
+  
+  with(input,
+       data.frame(
+         incu = time_to_event(n = sims, mean =  mu_inc, var =  sigma_inc),
+         inf  = time_to_event(sims, mu_inf, sigma_inf)) %>%
+         mutate(flight.departure = runif(sims, min = 0, max =2*(incu + inf)),
+                flight.arrival   = flight.departure + dur_flight) )
+  
 }
 
 
@@ -24,12 +39,18 @@ calc_probs <- function(dur.flight,
   #convert flight time to days
   dur_flight = dur.flight / 24
   
+  infection_histories <- generate_histories(list(dur.flight = dur.flight,
+                                                 mu_inc     = mu_inc,
+                                                 sigma_inc  = sigma_inc,
+                                                 mu_inf     = mu_inf,
+                                                 sigma_inf  = sigma_inf,
+                                                 sens.exit  = sens.exit,
+                                                 sens.entry = sens.entry,
+                                                 prop.asy   = prop.asy,
+                                                 sims       = sims,
+                                                 dur_flight = dur_flight))
   
-  data.frame(
-    incu = time_to_event(sims, mu_inc, sigma_inc),
-    inf  = time_to_event(sims, mu_inf, sigma_inf)) %>%
-    mutate(flight.departure = runif(sims, min = 0, max =2*(incu + inf)),
-           flight.arrival   = flight.departure + dur_flight) %>%
+  infection_histories %>%
     mutate(hospitalised_prior_to_departure = inf + incu < flight.departure) %>%
     filter(hospitalised_prior_to_departure == FALSE) %>%
     mutate(exit_screening_label  = runif(n(), 0, 1) < sens.exit /100,
@@ -72,10 +93,10 @@ calc_probs <- function(dur.flight,
   
 }
 
-pathogen <- list(`SARS [2]` = data.frame(mu_inc    =  6.4,
-                                         sigma_inc = 16.7,
-                                         mu_inf    =  3.8,
-                                         sigma_inf =  6.0),
+pathogen <- list(`SARS-like` = data.frame(mu_inc    =  6.4,
+                                          sigma_inc = 16.7,
+                                          mu_inf    =  3.8,
+                                          sigma_inf =  6.0),
                  Custom     = data.frame(mu_inc    =  5.0,
                                          sigma_inc =  5.0,
                                          mu_inf    =  5.0,
