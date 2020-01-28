@@ -21,6 +21,6 @@ Users may adjust the following parameters:
 
 * duration of flight
 * mean and variance of the probability distribution describing time between infection and onset of symptoms
-* mean and variance of the probability distribution describing time between onset of symptoms and recovery from infection
+* mean and variance of the probability distribution describing time between onset of symptoms and severe symptoms
 * sensitivity of exit screening
 * sensitivity of entry screening
