@@ -7,3 +7,4 @@ The following journal articles provide additional detail on border screening for
 4. [Mabey, D., Flasche, S., Edmunds, WJ (2014) Airport screening for Ebola. BMJ 349:g202](https://doi.org/10.1136/bmj.g6202)
 5. [Gostic, KM., Kucharski, AJ., Lloyd-Smith, JO. (2015) Effectiveness of traveller screening for emerging pathogens is shaped by epidemiology and natural history of infection. eLife, 4:e05564](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4337724/)
 6. [Pitman, RJ., Cooper, BS., Trotter, CL., Gay, NJ. (2005) Entry screening for severe acute respiratory syndrome (SARS) or influenza: policy evaluation. BMJ 331:1242](https://doi.org/10.1136/bmj.38573.696100.3A)
+7. [Quilty, B. Clifford, S., CMMID nCoV Working Group, Flasche, S., Eggo, R. (2020) Effectiveness of airport screening at detecting infected travellers. Preprint](https://github.com/cmmid/cmmid.github.io/raw/master/ncov/airport_screening_report/airport_screening_preprint_2020_01_28.pdf)
