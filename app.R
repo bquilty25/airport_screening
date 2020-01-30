@@ -54,7 +54,7 @@ ui <- list(
         #tags$label(class="h3",)
         sliderInput('dur.flight', 
                     label = "Travel duration (hours)",
-                    min = 0.1, max = 20, step = 1, value = 12),
+                    min = 1, max = 20, step = 1, value = 12),
         sliderInput(inputId = 'sens.exit',
                     label = 'Sensitivity of exit screening',
                     value = 86, min = 0, max = 100, step = 1, post  = " %"),
@@ -71,20 +71,19 @@ ui <- list(
                         selected = pathogen$name[1]),
             numericInput("mu_inc",
                          'Days from infection to symptom onset (mean)',
-                         value = 6.4, min = 0.1, max = 20, step = 0.1),
+                         value = 5.2, min = 0.1, max = 20, step = 0.1),
             numericInput("sigma_inc",
                          "Days from infection to symptom onset (variance)",
-                         value = 16.7, min = 0.1, max = 20, step = 0.1),
+                         value = 4.1, min = 0.1, max = 20, step = 0.1),
             numericInput("mu_inf",
                          'Days from symptom onset to severe symptoms e.g hospitalisation (mean)',
-                         value = 3.8, min = 0.1, max = 20, step = 0.1),
+                         value = 9.1, min = 0.1, max = 20, step = 0.1),
             numericInput("sigma_inf",
                          "Days from symptom onset to severe symptoms e.g hospitalisation (variance)",
-                         value = 6, min = 0.1, max = 20, step = 0.1)),
+                         value = 14.7, min = 0.1, max = 20, step = 0.1)),
         checkboxInput("uncert",
                       label="Show uncertainty (takes longer)",
-                      value = FALSE),
-        submitButton(text = "Calculate")
+                      value = FALSE)
         
       ),
       mainPanel(
@@ -281,7 +280,7 @@ server <- function(input, output, session){
   output$detailed_estimates <- renderTable(
     
     if (input$uncert==TRUE){
-      travellers <- generate_travellers(input, i = rep(100, 1000))
+      travellers <- generate_travellers(input, i = rep(100, 100))
       probs <- generate_probabilities(travellers)
       
       est_df <- data.frame(CI = apply(X = probs[, -1], 
