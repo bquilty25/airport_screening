@@ -8,7 +8,4 @@ The following journal articles provide additional detail on border screening for
 5. [Gostic, KM., Kucharski, AJ., Lloyd-Smith, JO. (2015) Effectiveness of traveller screening for emerging pathogens is shaped by epidemiology and natural history of infection. eLife, 4:e05564](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4337724/)
 6. [Pitman, RJ., Cooper, BS., Trotter, CL., Gay, NJ. (2005) Entry screening for severe acute respiratory syndrome (SARS) or influenza: policy evaluation. BMJ 331:1242](https://doi.org/10.1136/bmj.38573.696100.3A)
 7. [Quilty, B. Clifford, S., CMMID nCoV Working Group, Flasche, S., Eggo, R. (2020) Effectiveness of airport screening at detecting infected travellers. Preprint](https://github.com/cmmid/cmmid.github.io/raw/master/ncov/airport_screening_report/airport_screening_preprint_2020_01_28.pdf)
-<<<<<<< Updated upstream
-=======
 8. [Li, Q. et al. (2020) Early Transmission Dynamics in Wuhan, China, of Novel Coronavirus-Infected Pneumonia. NEJM. In press.](https://doi.org/10.1056/nejmoa2001316)
->>>>>>> Stashed changes
