@@ -84,23 +84,42 @@ calc_probs <- function(dur.flight,
                                     prop_symp_at_entry)) %>%
     as.list %>%
     return
-  
-  # return(list("prob_det_symp_exit"       = prob_det_symp_exit,
-  #             "prob_det_symp_entry_only" = prob_det_symp_entry_only,
-  #             "prob_det_symp_entry"      = prob_det_symp_entry,
-  #             "prob_det_severe_flight"   = prob_det_severe_flight,
-  #             "prob_undet"               = prob_undet))
-  
 }
 
-pathogen <- list(`SARS-like` = data.frame(mu_inc    =  6.4,
-                                          sigma_inc = 16.7,
-                                          mu_inf    =  3.8,
-                                          sigma_inf =  6.0),
-                 Custom     = data.frame(mu_inc    =  5.0,
-                                         sigma_inc =  5.0,
-                                         mu_inf    =  5.0,
-                                         sigma_inf =  5.0)) %>%
+pathogen <- list(
+  `nCoV-2019` = 
+    data.frame(
+      # (Li et al. (2020) NEJM)
+      mu_inc    =  5.2,
+      sigma_inc =  4.1,
+      mu_inf    =  9.1,
+      sigma_inf = 14.7,
+      prop.asy  = 17
+    ),
+  # `nCoV-2019 (Backer)` = 
+  #   data.frame(
+  #     # (Backer et al., 2020)
+  #     mu_inc    =  5.7,
+  #     sigma_inc =  round(2.6^2,1),
+  #     # (Huang et al., 2020)
+  #     mu_inf    = 8.0,
+  #     sigma_inf = round(((13-5)/1.35)^2,1), # using Higgins (2008) Cochrane Handbook
+  #     prop.asy  = 17
+  #   ),
+  `SARS-like` = 
+    data.frame(
+      mu_inc    =  6.4,
+      sigma_inc = 16.7,
+      mu_inf    =  3.8,
+      sigma_inf =  6.0,
+      prop.asy  =  0.0),
+  Custom     = 
+    data.frame(
+      mu_inc    =  5.0,
+      sigma_inc =  5.0,
+      mu_inf    =  5.0,
+      sigma_inf =  5.0,
+      prop.asy  = 10.0)) %>%
   dplyr::bind_rows(., .id = "name")
 
 
@@ -141,4 +160,14 @@ generate_probabilities <- function(travellers){
     pivot_longer(cols=c(mean_prob,
                         lb_prob,ub_prob)) %>% 
     pivot_wider(names_from = screening, values_from = value)
+}
+
+
+get_var <- function(lower, upper, n){
+  
+  # back-calculate variance from the lower and upper bands of a symmetric
+  # confidence interval of the mean
+  
+  n*((lower - upper)/(2*qt(0.975, n-1)))^2
+  
 }

@@ -17,6 +17,8 @@ suppressPackageStartupMessages({
   library(emojifont)
   #library(cowplot)
   library(gridExtra)
+  library(knitr)
+  library(kableExtra)
   
 })
 
@@ -69,41 +71,42 @@ ui <- list(
                         selected = pathogen$name[1]),
             numericInput("mu_inc",
                          'Days from infection to symptom onset (mean)',
-                         value = 1, min = 0.1, max = 20, step = 0.1),
+                         value = 6.4, min = 0.1, max = 20, step = 0.1),
             numericInput("sigma_inc",
                          "Days from infection to symptom onset (variance)",
-                         value = 1, min = 0.1, max = 20, step = 0.1),
+                         value = 16.7, min = 0.1, max = 20, step = 0.1),
             numericInput("mu_inf",
                          'Days from symptom onset to severe symptoms e.g hospitalisation (mean)',
-                         value = 1, min = 0.1, max = 20, step = 0.1),
+                         value = 3.8, min = 0.1, max = 20, step = 0.1),
             numericInput("sigma_inf",
                          "Days from symptom onset to severe symptoms e.g hospitalisation (variance)",
-                         value = 1, min = 0.1, max = 20, step = 0.1)
-        )
+                         value = 6, min = 0.1, max = 20, step = 0.1)),
+        checkboxInput("uncert",
+                      label="Show uncertainty (takes longer)",
+                      value = FALSE),
+        submitButton(text = "Calculate")
         
       ),
-      mainPanel(               
-                                tabsetPanel(type = "tabs",
-                    tabPanel(title = "Plot",
-                             (shiny::includeMarkdown("waffle_description.md")),
-                             fluidRow(uiOutput("waffle_plot")),
-                             shiny::includeMarkdown("density_description.md"),
-                             fluidRow(uiOutput("density_plot"))),
-                    
-                    tabPanel(title = "Model",
-                             fluidRow(shiny::includeMarkdown("assumptions.md"))),
-                    tabPanel(title = "References",
-                             shiny::includeMarkdown("references.md"))
+      mainPanel(
+        tabsetPanel(
+          type = "tabs",
+          tabPanel(
+            title = "Plot",
+            (shiny::includeMarkdown("waffle_description.md")),
+            fluidRow(
+              
+              uiOutput("waffle_plot"),
+              tableOutput("detailed_estimates"), align = "center"),
+            shiny::includeMarkdown("density_description.md"),
+            fluidRow(uiOutput("density_plot"))),
+          tabPanel(title = "Model",
+                   fluidRow(shiny::includeMarkdown("assumptions.md"))),
+          tabPanel(title = "References",
+                   shiny::includeMarkdown("references.md"))
         )
-        
       )
     )
   )
-  #fluidPage(title = "Key assumptions",
-  #          fluidRow(shiny::includeMarkdown("assumptions.md"))
-  #),
-  #fluidPage(title = "References",
-  #          fluidRow(shiny::includeMarkdown("references.md"))
 )
 
 
@@ -112,6 +115,9 @@ server <- function(input, output, session){
   observe({
     default=input$pathogen
     
+    updateNumericInput(session,"prop.asy",
+                       value = pathogen %>% 
+                         filter(name==default) %>% pull(prop.asy))
     updateNumericInput(session,"mu_inc",
                        value = pathogen %>% 
                          filter(name==default) %>% pull(mu_inc))
@@ -124,22 +130,19 @@ server <- function(input, output, session){
     updateNumericInput(session,"sigma_inf",
                        value = pathogen %>% 
                          filter(name==default) %>% pull(sigma_inf))
-    
   }
+  
   )
   
   
   waffle_df <- reactive({
     
-    
     travellers <- generate_travellers(input, i = rep(10000, 1))
+    
     
     probs      <- generate_probabilities(travellers)
     
-    # round(probs$prob_det_exit,2)
-    # round(probs$prob_det_entry,2)
-    # 100 - (round(probs$prob_det_exit,2) + round(probs$prob_det_entry_only,2))
-    # 
+    
     waffle_labels <- data.frame(
       desc = factor(c(rep("detected at exit screening",
                           round(probs$prop_symp_at_exit)[1]),
@@ -161,9 +164,9 @@ server <- function(input, output, session){
                                  "detected at entry screening",
                                  "not detected")))
     
+    
     waffle_counts <- count(waffle_labels, desc, .drop = FALSE) %>%
       mutate(desc_comb = paste(n, desc))
-    
     
     waffle_df <- expand.grid(y = -c(1:5), x = 1:20) %>% 
       as_tibble() %>% 
@@ -274,6 +277,39 @@ server <- function(input, output, session){
   output$density_plot <- renderUI({
     plotOutput("densityplot", width = "100%", height = "2in")
   })
+  
+  output$detailed_estimates <- renderTable(
+    
+    if (input$uncert==TRUE){
+      travellers <- generate_travellers(input, i = rep(100, 1000))
+      probs <- generate_probabilities(travellers)
+      
+      est_df <- data.frame(CI = apply(X = probs[, -1], 
+                                      MARGIN = 2, 
+                                      FUN = make_ci_label)) %>%
+        rownames_to_column(var = "name") %>%
+        mutate(name = factor(name,
+                             levels = c("prop_symp_at_exit",
+                                        "prop_sev_at_entry",
+                                        "prop_symp_at_entry",
+                                        "prop_undetected"),
+                             labels = c("Detected at exit",
+                                        "Severe on flight",
+                                        "Detected on entry",
+                                        "Not detected"),
+                             ordered = TRUE)) %>%
+        arrange(name) %>%
+        rename(`Detection outcome` = name,
+               `Estimate (95% CI)`  = CI) 
+      est_df
+    }
+    
+    else{
+      NULL
+    },
+    align = "lr"
+  )
+  
 }
 
 shinyApp(ui=ui,server=server)
