@@ -106,13 +106,29 @@ pathogen <- list(
   #     sigma_inf = round(((13-5)/1.35)^2,1), # using Higgins (2008) Cochrane Handbook
   #     prop.asy  = 17
   #   ),
-  `SARS-like` = 
+  `SARS-like (2002)` = 
     data.frame(
       mu_inc    =  6.4,
       sigma_inc = 16.7,
       mu_inf    =  3.8,
       sigma_inf =  6.0,
       prop.asy  =  0.0),
+  `Flu A/H1N1-like (2009)` =
+    data.frame(
+      mu_inc    =  4.3,
+      sigma_inc =  1.05,
+      mu_inf    =  9.3,
+      sigma_inf =  0.7,
+      prop.asy  = 16.0 # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4586318/ 
+    ),
+  `MERS-like (2012)` = 
+    data.frame(
+      mu_inc    =  5.5,
+      sigma_inc = 6.25, # https://www.sciencedirect.com/science/article/pii/S1473309913703049?via%3Dihub#sec1
+      mu_inf    =  5.0,  # https://www.nejm.org/doi/10.1056/NEJMoa1306742
+      sigma_inf =  7.5,
+      prop.asy  = 21.0  # https://doi.org/10.1016/j.tmaid.2018.12.003 citing https://www.who.int/csr/disease/coronavirus_infections/risk-assessment-august-2018.pdf?ua=1
+    ),
   Custom     = 
     data.frame(
       mu_inc    =  5.0,
@@ -124,7 +140,8 @@ pathogen <- list(
 
 
 make_ci_label <- function(x){
-  return(sprintf("%0.2f (%0.2f, %0.2f)", x[1], x[2], x[3]))
+  x <- round(x)
+  return(sprintf("%i (%i, %i)", x[1], x[2], x[3]))
 }
 
 

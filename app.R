@@ -188,9 +188,37 @@ server <- function(input, output, session){
     waffle <- waffle_df()
     waffle_data <- waffle %>% 
       #mutate(group=as.factor(group),
-      mutate(label=fontawesome("fa-user"))
+      mutate(label=fontawesome(case_when(
+        desc == "detected at exit screening"   ~ "fa-user",
+        desc == "detected at entry screening"  ~ "fa-user-circle",
+        desc == "detected as severe on flight" ~ "fa-user-circle",
+        desc == "not detected"                 ~ "fa-user-circle")))
+    
     
     waffle_colors <- RColorBrewer::brewer.pal(4, name = "Set2")[c(1,4,3,2)]
+    
+    waffle_counts_df <- count(waffle_data, desc, name = "n") 
+    waffle_not_detected_on_exit <- waffle_counts_df %>%
+      filter(desc != "detected at exit screening") %>%
+      summarise(N = sum(n)) %>% pull(N)
+    
+    waffle_detected_on_entry_or_flight <-
+      waffle_counts_df %>%
+      filter(desc %in% c("detected as severe on flight",
+                         "detected at entry screening")) %>%
+      summarise(N = sum(n)) %>% pull(N)
+    
+    waffle_counts_vec        <- waffle_counts_df$n
+    names(waffle_counts_vec) <- waffle_counts_df$desc
+    
+    # waffle_counts$n <- sum(waffle_counts) - 
+    #                      waffle_counts["detected at exit screening"]
+    
+    waffle_subtitle <- sprintf(
+      "%i cases not detected at exit screening.\n%0.2f%% of these %i cases were then detected either during flight or at entry screening",
+      waffle_not_detected_on_exit,
+      100*waffle_detected_on_entry_or_flight/waffle_not_detected_on_exit,
+      waffle_not_detected_on_exit)
     
     names(waffle_colors) <- levels(waffle_data$desc_comb)
     
@@ -207,7 +235,8 @@ server <- function(input, output, session){
       #scale_y_continuous(expand = c(0, 0), trans = 'reverse') +
       scale_colour_manual(values = waffle_colors, drop = FALSE) +
       scale_fill_manual(values = waffle_colors, drop = FALSE) +
-      labs(title = "Out of 100 infected travellers:")+ 
+      labs(title = "Out of 100 infected travellers:",
+           subtitle = waffle_subtitle)+ 
       coord_equal()+
       theme_void()+
       theme(axis.text       = element_blank(),
@@ -215,7 +244,8 @@ server <- function(input, output, session){
             axis.ticks      = element_blank(),
             legend.title    = element_blank(),
             legend.position = "bottom",
-            plot.title = element_text(hjust = 0.5, size=15),
+            plot.title = element_text(hjust = 0, size=15),
+            plot.subtitle = element_text(hjust = 0, lineheight = 1.5),
             #legend.key.size = unit(3, "line"),
             legend.text     = element_text(size=12)) +
       guides(color=guide_legend(ncol=1)) 
@@ -280,7 +310,7 @@ server <- function(input, output, session){
   output$detailed_estimates <- renderTable(
     
     if (input$uncert==TRUE){
-      travellers <- generate_travellers(input, i = rep(100, 100))
+      travellers <- generate_travellers(input, i = rep(100, 200))
       probs <- generate_probabilities(travellers)
       
       est_df <- data.frame(CI = apply(X = probs[, -1], 
