@@ -19,6 +19,8 @@ suppressPackageStartupMessages({
   library(gridExtra)
   library(knitr)
   library(kableExtra)
+  library(dtplyr)
+  library(tidyfast)
   
 })
 
@@ -198,15 +200,21 @@ server <- function(input, output, session){
     waffle_colors <- RColorBrewer::brewer.pal(4, name = "Set2")[c(1,4,3,2)]
     
     waffle_counts_df <- count(waffle_data, desc, name = "n") 
-    waffle_not_detected_on_exit <- waffle_counts_df %>%
+    waffle_not_detected_on_exit <- waffle_counts_df %>% 
+      lazy_dt() %>% 
       filter(desc != "detected at exit screening") %>%
-      summarise(N = sum(n)) %>% pull(N)
+      summarise(N = sum(n)) %>% 
+      as.data.frame() %>%  
+      pull(N) 
     
     waffle_detected_on_entry_or_flight <-
       waffle_counts_df %>%
+      lazy_dt() %>% 
       filter(desc %in% c("detected as severe on flight",
                          "detected at entry screening")) %>%
-      summarise(N = sum(n)) %>% pull(N)
+      summarise(N = sum(n)) %>% 
+      as.data.frame() %>% 
+      pull(N)
     
     waffle_counts_vec        <- waffle_counts_df$n
     names(waffle_counts_vec) <- waffle_counts_df$desc
@@ -260,9 +268,10 @@ server <- function(input, output, session){
     
     period_plot_data <- mutate(period_plot_data,
                                severe_period = 
-                                 inf_period + inc_period) %>%
-      tidyr::pivot_longer(names_to = "Period",
-                          cols = everything(),
+                                 inf_period + inc_period) %>% 
+      #lazy_dt() %>% 
+      dt_pivot_longer(names_to = "Period",
+                          #cols = everything(),
                           values_to = "value") %>%
       mutate(Period = factor(Period,
                              levels = c("inc_period",
@@ -270,7 +279,8 @@ server <- function(input, output, session){
                                         "severe_period"),
                              labels = c("Infection to onset",
                                         "Onset to severe",
-                                        "Infection to severe")))
+                                        "Infection to severe"))) %>% 
+      as.data.frame()
     
     
     period_plot <- ggplot(data = period_plot_data,
@@ -278,14 +288,17 @@ server <- function(input, output, session){
       geom_density(fill  = "lightskyblue",
                    color = "lightskyblue",
                    alpha = 0.5) +
-      labs(x="Time (days)") + theme_minimal() +
+      labs(x = "Time (days)") +
+      theme_minimal() +
       ylab("Density")  +
       facet_grid(. ~ Period) +
-      geom_vline(data = period_plot_data %>%
-                   group_by(Period) %>%
-                   summarise(mean = mean(value)),
-                 aes(xintercept = mean),
-                 lty = 2) +
+      geom_vline(
+        data = period_plot_data %>%
+          group_by(Period) %>%
+          summarise(mean = mean(value)),
+        aes(xintercept = mean),
+        lty = 2
+      ) +
       labs(title = "Vertical lines represent mean time to event") +
       theme(plot.title = element_text(hjust = 0.5))
     

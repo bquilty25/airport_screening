@@ -18,9 +18,11 @@ generate_histories <- function(input){
   with(input,
        data.frame(
          incu = time_to_event(n = sims, mean =  mu_inc, var =  sigma_inc),
-         inf  = time_to_event(sims, mu_inf, sigma_inf)) %>%
+         inf  = time_to_event(sims, mu_inf, sigma_inf)) %>% 
+         lazy_dt() %>% 
          mutate(flight.departure = runif(sims, min = 0, max =2*(incu + inf)),
-                flight.arrival   = flight.departure + dur_flight) )
+                flight.arrival   = flight.departure + dur_flight) %>% 
+         as.data.frame())
   
 }
 
@@ -50,7 +52,8 @@ calc_probs <- function(dur.flight,
                                                  sims       = sims,
                                                  dur_flight = dur_flight))
   
-  infection_histories %>%
+  infection_histories %>% 
+    lazy_dt() %>% 
     mutate(hospitalised_prior_to_departure = inf + incu < flight.departure) %>%
     filter(hospitalised_prior_to_departure == FALSE) %>%
     mutate(exit_screening_label  = runif(n(), 0, 1) < sens.exit /100,
@@ -70,11 +73,8 @@ calc_probs <- function(dur.flight,
            found_at_entry_only = found_at_entry & (!symp_at_exit)
     ) %>%
     summarise(
-      
       prop_sev_at_entry = (1-prop.asy/100)*mean(sev_at_entry),
-      
       prop_symp_at_exit = (1-prop.asy/100)*mean(found_at_exit),
-      
       prop_symp_at_entry = (1-prop.asy/100)*mean(
         (missed_at_exit & found_at_entry & !sev_at_entry) |
           (found_at_entry_only & !sev_at_entry))
@@ -82,6 +82,7 @@ calc_probs <- function(dur.flight,
     mutate(prop_undetected = 1 - (prop_sev_at_entry +
                                     prop_symp_at_exit +
                                     prop_symp_at_entry)) %>%
+    as.data.frame() %>% 
     as.list %>%
     return
 }
@@ -163,8 +164,8 @@ generate_travellers <- function(input, i){
 
 # function to take travellers and work out their detection probabilities
 generate_probabilities <- function(travellers){
-  travellers %>%
-    pivot_longer(cols = c(prop_symp_at_exit,
+  travellers %>% 
+    dt_pivot_longer(cols = c(prop_symp_at_exit,
                           prop_symp_at_entry,
                           prop_sev_at_entry,
                           prop_undetected),
@@ -174,9 +175,10 @@ generate_probabilities <- function(travellers){
     summarise(mean_prob = mean(prob*100),
               lb_prob=quantile(probs=0.025,x=prob*100),
               ub_prob=quantile(probs=0.975,x=prob*100)) %>%  
-    pivot_longer(cols=c(mean_prob,
+    dt_pivot_longer(cols=c(mean_prob,
                         lb_prob,ub_prob)) %>% 
-    pivot_wider(names_from = screening, values_from = value)
+    dt_pivot_wider(names_from = screening, values_from = value) %>% 
+    as.data.frame()
 }
 
 
