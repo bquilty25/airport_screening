@@ -8,19 +8,18 @@
 #
 
 suppressPackageStartupMessages({
-  library(shiny)
-  library(ggplot2)
-  library(tidyverse)
-  library(dplyr)
-  library(furrr)
-  #install.packages("emojifont")
-  library(emojifont)
-  #library(cowplot)
-  library(gridExtra)
-  library(knitr)
-  library(kableExtra)
-  library(dtplyr)
-  library(tidyfast)
+  
+  require("pacman")
+  
+  pacman::p_load(
+  shiny,
+  tidyverse,
+  emojifont,
+  cowplot,
+  gridExtra,
+  knitr,
+  kableExtra,
+  tidytable)
   
 })
 
@@ -201,7 +200,6 @@ server <- function(input, output, session){
     
     waffle_counts_df <- count(waffle_data, desc, name = "n") 
     waffle_not_detected_on_exit <- waffle_counts_df %>% 
-      lazy_dt() %>% 
       filter(desc != "detected at exit screening") %>%
       summarise(N = sum(n)) %>% 
       as.data.frame() %>%  
@@ -209,7 +207,6 @@ server <- function(input, output, session){
     
     waffle_detected_on_entry_or_flight <-
       waffle_counts_df %>%
-      lazy_dt() %>% 
       filter(desc %in% c("detected as severe on flight",
                          "detected at entry screening")) %>%
       summarise(N = sum(n)) %>% 
@@ -269,9 +266,8 @@ server <- function(input, output, session){
     period_plot_data <- mutate(period_plot_data,
                                severe_period = 
                                  inf_period + inc_period) %>% 
-      #lazy_dt() %>% 
-      dt_pivot_longer(names_to = "Period",
-                          #cols = everything(),
+      pivot_longer(names_to = "Period",
+                          cols = everything(),
                           values_to = "value") %>%
       mutate(Period = factor(Period,
                              levels = c("inc_period",
