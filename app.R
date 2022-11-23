@@ -7,21 +7,18 @@
 #    http://shiny.rstudio.com/
 #
 
-suppressPackageStartupMessages({
+#suppressPackageStartupMessages({
   
-  require("pacman")
+  library(tidyverse)
+  library(emojifont)
+  library(cowplot)
+  library(gridExtra)
+  library(knitr)
+  library(kableExtra)
+  library(tidytable)
+  library(markdown)
   
-  pacman::p_load(
-  shiny,
-  tidyverse,
-  emojifont,
-  cowplot,
-  gridExtra,
-  knitr,
-  kableExtra,
-  tidytable)
-  
-})
+#})
 
 source("utils.R")
 
