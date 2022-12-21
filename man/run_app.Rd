@@ -19,6 +19,6 @@ Covid-19 pandemic, in early 2020.
 \examples{
 # Choose options from the app GUI
 \dontrun{
- run_app()
+run_app()
 }
 }

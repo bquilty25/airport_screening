@@ -13,14 +13,30 @@
 #' @examples
 #' # Choose options from the app GUI
 #' \dontrun{
-#'  run_app()
+#' run_app()
 #' }
 run_app <- function() {
-  # write date stamp to file
-  write_date_stamp()
+  waffle_description <- system.file(
+    "info", "waffle_description.md",
+    package = "airportscreening"
+  )
+  density_description <- system.file(
+    "info", "density_description.md",
+    package = "airportscreening"
+  )
+  assumptions <- system.file(
+    "info", "assumptions.md",
+    package = "airportscreening"
+  )
+  references <- system.file(
+    "info", "references.md",
+    package = "airportscreening"
+  )
+
+  pathogen_parameters <- airportscreening::pathogen_parameters
 
   ui <- list(
-    tags$style(type = "text/css", "
+    shiny::tags$style(type = "text/css", "
   body { padding-top: 20px; padding-left: 20px; padding-right: 20px}
   .inline label.control-label, .inline .selectize-control.single {
     display: table-cell;
@@ -47,7 +63,7 @@ run_app <- function() {
           "infected travellers"
         )
       ),
-      shiny::includeMarkdown("inst/info/date_stamp.md"),
+      shiny::markdown(get_date_stamp()),
       shiny::sidebarLayout(
         shiny::sidebarPanel(
           shiny::sliderInput("dur.flight",
@@ -104,22 +120,24 @@ run_app <- function() {
             type = "tabs",
             shiny::tabPanel(
               title = "Plot",
-              (shiny::includeMarkdown("inst/info/waffle_description.md")),
+              (shiny::includeMarkdown(waffle_description)),
               shiny::fluidRow(
                 shiny::uiOutput("waffle_plot"),
                 shiny::tableOutput("detailed_estimates"),
                 align = "center"
               ),
-              shiny::includeMarkdown("inst/info/density_description.md"),
-              shiny::fluidRow(uiOutput("density_plot"))
+              shiny::includeMarkdown(density_description),
+              shiny::fluidRow(shiny::uiOutput("density_plot"))
             ),
             shiny::tabPanel(
               title = "Model",
-              shiny::fluidRow(shiny::includeMarkdown("inst/info/assumptions.md"))
+              shiny::fluidRow(
+                shiny::includeMarkdown(assumptions)
+              )
             ),
             shiny::tabPanel(
               title = "References",
-              shiny::includeMarkdown("inst/info/references.md")
+              shiny::includeMarkdown(references)
             )
           )
         )
@@ -132,23 +150,23 @@ run_app <- function() {
 
       shiny::updateNumericInput(session, "prop.asy",
         value = pathogen_parameters[pathogen_parameters$name ==
-          pathogen_input]$prop.asy
+          pathogen_input, ]$prop.asy
       )
       shiny::updateNumericInput(session, "mu_inc",
         value = pathogen_parameters[pathogen_parameters$name ==
-          pathogen_input]$mu_inc
+          pathogen_input, ]$mu_inc
       )
       shiny::updateNumericInput(session, "sigma_inc",
         value = pathogen_parameters[pathogen_parameters$name ==
-          pathogen_input]$sigma_inc
+          pathogen_input, ]$sigma_inc
       )
       shiny::updateNumericInput(session, "mu_inf",
         value = pathogen_parameters[pathogen_parameters$name ==
-          pathogen_input]$mu_inf
+          pathogen_input, ]$mu_inf
       )
       shiny::updateNumericInput(session, "sigma_inf",
         value = pathogen_parameters[pathogen_parameters$name ==
-          pathogen_input]$sigma_inf
+          pathogen_input, ]$sigma_inf
       )
     })
 
@@ -223,12 +241,14 @@ run_app <- function() {
       waffle <- waffle_df()
       waffle_data <- waffle %>%
         # dplyr::mutate(group=as.factor(group),
-        dplyr::mutate(label = emojifont::fontawesome(case_when(
-          desc == "detected at exit screening" ~ "fa-user",
-          desc == "detected at entry screening" ~ "fa-user-circle",
-          desc == "detected as severe on flight" ~ "fa-user-circle",
-          desc == "not detected" ~ "fa-user-circle"
-        )))
+        dplyr::mutate(label = emojifont::fontawesome(
+          dplyr::case_when(
+            desc == "detected at exit screening" ~ "fa-user",
+            desc == "detected at entry screening" ~ "fa-user-circle",
+            desc == "detected as severe on flight" ~ "fa-user-circle",
+            desc == "not detected" ~ "fa-user-circle"
+          )
+        ))
 
 
       waffle_colors <- RColorBrewer::brewer.pal(4, name = "Set2")[c(1, 4, 3, 2)]
@@ -243,9 +263,9 @@ run_app <- function() {
         waffle_counts_df %>%
         dplyr::filter(
           desc %in% c(
-          "detected as severe on flight",
-          "detected at entry screening"
-        )
+            "detected as severe on flight",
+            "detected at entry screening"
+          )
         ) %>%
         dplyr::summarise(N = sum(n)) %>%
         as.data.frame() %>%
@@ -265,7 +285,7 @@ run_app <- function() {
 
       waffle_plot <- ggplot2::ggplot(
         data = waffle_data,
-        aes(x = .data$x, y = .data$y, colour = .data$desc_comb)
+        ggplot2::aes(x = .data$x, y = .data$y, colour = .data$desc_comb)
       ) +
         ggplot2::geom_raster(
           ggplot2::aes(fill = .data$desc_comb),
@@ -316,18 +336,19 @@ run_app <- function() {
         ) %>%
         dplyr::mutate(
           Period = factor(
-          .data$Period,
-          levels = c(
-            "inc_period",
-            "inf_period",
-            "severe_period"
-          ),
-          labels = c(
-            "Infection to onset",
-            "Onset to severe",
-            "Infection to severe"
+            .data$Period,
+            levels = c(
+              "inc_period",
+              "inf_period",
+              "severe_period"
+            ),
+            labels = c(
+              "Infection to onset",
+              "Onset to severe",
+              "Infection to severe"
+            )
           )
-        ))
+        )
 
       period_plot <- ggplot2::ggplot(
         data = period_plot_data,
@@ -380,20 +401,21 @@ run_app <- function() {
           dplyr::mutate(
             name = factor(
               .data$name,
-            levels = c(
-              "prop_symp_at_exit",
-              "prop_sev_at_entry",
-              "prop_symp_at_entry",
-              "prop_undetected"
-            ),
-            labels = c(
-              "Detected at exit",
-              "Severe on flight",
-              "Detected on entry",
-              "Not detected"
-            ),
-            ordered = TRUE
-          )) %>%
+              levels = c(
+                "prop_symp_at_exit",
+                "prop_sev_at_entry",
+                "prop_symp_at_entry",
+                "prop_undetected"
+              ),
+              labels = c(
+                "Detected at exit",
+                "Severe on flight",
+                "Detected on entry",
+                "Not detected"
+              ),
+              ordered = TRUE
+            )
+          ) %>%
           dplyr::arrange(name) %>%
           dplyr::rename(
             "Detection outcome" = .data$name,
