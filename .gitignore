@@ -2,3 +2,15 @@
 rsconnect/shinyapps.io/bquilty/airport_screening.dcf
 
 .Rproj.user/*
+.Rproj.user
+# {shinytest2}: Ignore new debug snapshots for `$expect_values()`
+*_.new.png
+
+.Rhistory
+.RData
+.Ruserdata
+.DS_Store
+docs
+inst/doc
+/doc/
+/Meta/
