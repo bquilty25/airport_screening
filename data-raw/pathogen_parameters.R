@@ -14,17 +14,6 @@ pathogen_parameters <- do.call(
       sigma_inf = 14.7,
       prop.asy = 17
     ),
-    # `nCoV-2019 (Backer)` =
-    #   data.frame(
-    #     # (Backer et al., 2020)
-    #     mu_inc    =  5.7,
-    #     sigma_inc =  round(2.6^2,1),
-    #     # (Huang et al., 2020)
-    #     mu_inf    = 8.0,
-    #     sigma_inf = round(((13-5)/1.35)^2,1),
-    # using Higgins (2008) Cochrane Handbook
-    #     prop.asy  = 17
-    #   ),
     data.frame(
       name = "SARS-like (2002)",
       mu_inc = 6.4,
@@ -44,10 +33,19 @@ pathogen_parameters <- do.call(
     data.frame(
       name = "MERS-like (2012)",
       mu_inc = 5.5,
-      sigma_inc = 6.25, # https://www.sciencedirect.com/science/article/pii/S1473309913703049?via%3Dihub#sec1
+      sigma_inc = 6.25,
+      # nolint begin
+      # https://www.sciencedirect.com/science/article/
+      # pii/S1473309913703049?via%3Dihub#sec1
+      # nolint end
       mu_inf = 5.0, # https://www.nejm.org/doi/10.1056/NEJMoa1306742
       sigma_inf = 7.5,
-      prop.asy = 21.0 # https://doi.org/10.1016/j.tmaid.2018.12.003 citing https://www.who.int/csr/disease/coronavirus_infections/risk-assessment-august-2018.pdf?ua=1
+      prop.asy = 21.0
+      # nolint begin
+      # https://doi.org/10.1016/j.tmaid.2018.12.003
+      # citing https://www.who.int/csr/disease/coronavirus_infections/
+      # risk-assessment-august-2018.pdf?ua=1
+      # nolint end
     ),
     data.frame(
       name = "Custom",

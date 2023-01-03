@@ -102,11 +102,17 @@ run_app <- function() {
               value = 4.1, min = 0.1, max = 20, step = 0.1
             ),
             shiny::numericInput("mu_inf",
-              "Days from symptom onset to severe symptoms e.g hospitalisation (mean)",
+              paste0(
+                "Days from symptom onset to severe symptoms e.g",
+                " hospitalisation (mean)"
+              ),
               value = 9.1, min = 0.1, max = 20, step = 0.1
             ),
             shiny::numericInput("sigma_inf",
-              "Days from symptom onset to severe symptoms e.g hospitalisation (variance)",
+              paste0(
+                "Days from symptom onset to severe symptoms e.g",
+                " hospitalisation (variance)"
+              ),
               value = 14.7, min = 0.1, max = 20, step = 0.1
             )
           ),
@@ -192,8 +198,6 @@ run_app <- function() {
             ),
             rep(
               "not detected",
-              # this is here to make sure we always sum to 100
-              # round(100*(1 - (probs$prob_det_exit + probs$prob_det_entry)),2))),
               100 - (round(probs$prop_symp_at_exit[1]) +
                 round(probs$prop_sev_at_entry)[1] +
                 round(probs$prop_symp_at_entry[1]))
@@ -203,7 +207,8 @@ run_app <- function() {
         )
       ) %>%
         dplyr::mutate(
-          desc = factor(desc,
+          desc = factor(
+            .data$desc,
             levels = c(
               "detected at exit screening",
               "detected as severe on flight",
@@ -214,14 +219,14 @@ run_app <- function() {
         )
 
 
-      waffle_counts <- dplyr::count(waffle_labels, desc) %>%
-        dplyr::mutate(desc_comb = paste(n, desc))
+      waffle_counts <- dplyr::count(waffle_labels, .data$desc) %>%
+        dplyr::mutate(desc_comb = paste(.data$n, .data$desc))
 
       waffle_df <- expand.grid(y = -seq_len(5), x = seq_len(20)) %>%
         tibble::as_tibble() %>%
         dplyr::bind_cols(waffle_labels) %>%
         dplyr::mutate(desc_comb = factor(
-          desc,
+          .data$desc,
           levels = waffle_counts$desc,
           labels = waffle_counts$desc_comb
         ))
@@ -243,39 +248,42 @@ run_app <- function() {
         # dplyr::mutate(group=as.factor(group),
         dplyr::mutate(label = emojifont::fontawesome(
           dplyr::case_when(
-            desc == "detected at exit screening" ~ "fa-user",
-            desc == "detected at entry screening" ~ "fa-user-circle",
-            desc == "detected as severe on flight" ~ "fa-user-circle",
-            desc == "not detected" ~ "fa-user-circle"
+            .data$desc == "detected at exit screening" ~ "fa-user",
+            .data$desc == "detected at entry screening" ~ "fa-user-circle",
+            .data$desc == "detected as severe on flight" ~ "fa-user-circle",
+            .data$desc == "not detected" ~ "fa-user-circle"
           )
         ))
 
 
       waffle_colors <- RColorBrewer::brewer.pal(4, name = "Set2")[c(1, 4, 3, 2)]
 
-      waffle_counts_df <- dplyr::count(waffle_data, desc, name = "n")
+      waffle_counts_df <- dplyr::count(waffle_data, .data$desc, name = "n")
       waffle_not_detected_on_exit <- waffle_counts_df %>%
-        dplyr::filter(desc != "detected at exit screening") %>%
-        dplyr::summarise(N = sum(n)) %>%
-        dplyr::pull(N)
+        dplyr::filter(.data$desc != "detected at exit screening") %>%
+        dplyr::summarise(N = sum(.data$n)) %>%
+        dplyr::pull(.data$N)
 
       waffle_detected_on_entry_or_flight <-
         waffle_counts_df %>%
         dplyr::filter(
-          desc %in% c(
+          .data$desc %in% c(
             "detected as severe on flight",
             "detected at entry screening"
           )
         ) %>%
-        dplyr::summarise(N = sum(n)) %>%
+        dplyr::summarise(N = sum(.data$n)) %>%
         as.data.frame() %>%
-        dplyr::pull(N)
+        dplyr::pull(.data$N)
 
       waffle_counts_vec <- waffle_counts_df$n
       names(waffle_counts_vec) <- waffle_counts_df$desc
 
       waffle_subtitle <- sprintf(
-        "%i cases not detected at exit screening.\n%0.2f%% of these %i cases were then detected either during flight or at entry screening",
+        paste0(
+          "%i cases not detected at exit screening.\n%0.2f%% of these %i cases",
+          " were then detected either during flight or at entry screening"
+        ),
         waffle_not_detected_on_exit,
         100 * waffle_detected_on_entry_or_flight / waffle_not_detected_on_exit,
         waffle_not_detected_on_exit
@@ -292,7 +300,7 @@ run_app <- function() {
           alpha = 0.2
         ) +
         ggplot2::geom_text(
-          ggplot2::aes(label = label),
+          ggplot2::aes(label = .data$label),
           family = "fontawesome-webfont",
           size = 6,
           key_glyph = "rect"
@@ -362,12 +370,12 @@ run_app <- function() {
         ggplot2::labs(x = "Time (days)") +
         ggplot2::theme_minimal() +
         ggplot2::ylab("Density") +
-        ggplot2::facet_grid(cols = ggplot2::vars(Period)) +
+        ggplot2::facet_grid(cols = ggplot2::vars(.data$Period)) +
         ggplot2::geom_vline(
           data = period_plot_data %>%
             dplyr::group_by(.data$Period) %>%
-            dplyr::summarise(mean = mean(value)),
-          ggplot2::aes(xintercept = mean),
+            dplyr::summarise(mean = mean(.data$value)),
+          ggplot2::aes(xintercept = .data$mean),
           lty = 2
         ) +
         ggplot2::labs(title = "Vertical lines represent mean time to event") +
@@ -416,7 +424,7 @@ run_app <- function() {
               ordered = TRUE
             )
           ) %>%
-          dplyr::arrange(name) %>%
+          dplyr::arrange(.data$name) %>%
           dplyr::rename(
             "Detection outcome" = .data$name,
             "Estimate (95% CI)" = .data$CI

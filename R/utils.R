@@ -44,6 +44,7 @@ time_to_event <- function(n, mean, var) {
 #' Simulate travel and infection histories from user input data
 #'
 #' @inheritParams calc_probs
+#' @importFrom rlang .data
 #' @keywords internal
 #' @return A data.frame of travel and infection outcomes.
 generate_histories <- function(dur.flight, mu_inc, sigma_inc,
@@ -52,8 +53,9 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
   tibble::tibble(
     incu = time_to_event(n = sims, mean = mu_inc, var = sigma_inc),
     inf = time_to_event(sims, mu_inf, sigma_inf),
-    flight.departure = stats::runif(sims, min = 0, max = 2 * (incu + inf)),
-    flight.arrival = flight.departure + dur.flight
+    flight.departure = stats::runif(sims, min = 0, max = 2 * (.data$incu +
+      .data$inf)),
+    flight.arrival = .data$flight.departure + dur.flight
   )
 }
 
@@ -70,6 +72,7 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
 #' @param prop.asy Proportion of asymptomatic infections.
 #' @param sims Number of simulation runs.
 #'
+#' @importFrom rlang .data
 #' @keywords internal
 #' @return A data.frame with probabilities of different travel and infection
 #' outcomes.
@@ -86,9 +89,10 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
   # simulate probabilities of different infection and travel related events
   infection_histories <- infection_histories %>%
     dplyr::mutate(
-      hospitalised_prior_to_departure = inf + incu < flight.departure
+      hospitalised_prior_to_departure = .data$inf + .data$incu <
+        .data$flight.departure
     ) %>%
-    dplyr::filter(hospitalised_prior_to_departure == FALSE) %>%
+    dplyr::filter(.data$hospitalised_prior_to_departure == FALSE) %>%
     dplyr::mutate(
       exit_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.exit / 100,
       entry_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.entry / 100
@@ -98,34 +102,34 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
   infection_histories <-
     dplyr::mutate(
       infection_histories,
-      symp_at_exit = incu < flight.departure,
-      symp_at_entry = incu < flight.arrival,
-      found_at_exit = symp_at_exit & exit_screening_label,
-      missed_at_exit = symp_at_exit & !exit_screening_label,
-      found_at_entry = symp_at_entry & entry_screening_label,
+      symp_at_exit = .data$incu < .data$flight.departure,
+      symp_at_entry = .data$incu < .data$flight.arrival,
+      found_at_exit = .data$symp_at_exit & .data$exit_screening_label,
+      missed_at_exit = .data$symp_at_exit & !.data$exit_screening_label,
+      found_at_entry = .data$symp_at_entry & .data$entry_screening_label,
       sev_at_exit = 0, # no hospitalised can exit country
-      sev_from_lat = (!symp_at_exit) &
-        (incu + inf < flight.arrival),
-      sev_from_symp = symp_at_exit & (!exit_screening_label) &
-        (incu + inf < flight.arrival),
-      sev_at_entry = sev_from_lat | sev_from_symp,
-      found_at_entry_only = found_at_entry & (!symp_at_exit)
+      sev_from_lat = (!.data$symp_at_exit) &
+        (.data$incu + .data$inf < .data$flight.arrival),
+      sev_from_symp = .data$symp_at_exit & (!.data$exit_screening_label) &
+        (.data$incu + .data$inf < .data$flight.arrival),
+      sev_at_entry = .data$sev_from_lat | .data$sev_from_symp,
+      found_at_entry_only = .data$found_at_entry & (!.data$symp_at_exit)
     )
 
   # summarise detection outcomes
   infection_histories <-
     dplyr::summarise(
       infection_histories,
-      prop_sev_at_entry = (1 - prop.asy / 100) * mean(sev_at_entry),
-      prop_symp_at_exit = (1 - prop.asy / 100) * mean(found_at_exit),
-      prop_symp_at_entry = (1 - prop.asy / 100) * mean(
-        (missed_at_exit & found_at_entry & !sev_at_entry) |
-          (found_at_entry_only & !sev_at_entry)
+      prop_sev_at_entry = (1.0 - prop.asy / 100) * mean(.data$sev_at_entry),
+      prop_symp_at_exit = (1.0 - prop.asy / 100) * mean(.data$found_at_exit),
+      prop_symp_at_entry = (1.0 - prop.asy / 100) * mean(
+        (.data$missed_at_exit & .data$found_at_entry & !.data$sev_at_entry) |
+          (.data$found_at_entry_only & !.data$sev_at_entry)
       )
     ) %>%
-    dplyr::mutate(prop_undetected = 1 - (prop_sev_at_entry +
-      prop_symp_at_exit +
-      prop_symp_at_entry))
+    dplyr::mutate(prop_undetected = 1.0 - (.data$prop_sev_at_entry +
+      .data$prop_symp_at_exit +
+      .data$prop_symp_at_entry))
 
   # return dataframe converted to list object
   return(
@@ -177,6 +181,7 @@ generate_travellers <- function(input, i) {
 #'
 #' @param travellers Output from the [generate_travellers()] function.
 #'
+#' @importFrom rlang .data
 #' @keywords internal
 #' @return A data.frame giving the probabilities of travellers who are infected
 #' being detected as such at different stages of airline travel.
@@ -184,23 +189,23 @@ generate_probabilities <- function(travellers) {
   travellers %>%
     tidyr::pivot_longer(
       cols = c(
-        prop_symp_at_exit,
-        prop_symp_at_entry,
-        prop_sev_at_entry,
-        prop_undetected
+        .data$prop_symp_at_exit,
+        .data$prop_symp_at_entry,
+        .data$prop_sev_at_entry,
+        .data$prop_undetected
       ),
       names_to = "screening",
       values_to = "prob"
     ) %>%
-    dplyr::group_by(screening) %>%
+    dplyr::group_by(.data$screening) %>%
     dplyr::summarise(
-      mean_prob = mean(prob * 100),
-      lb_prob = stats::quantile(probs = 0.025, x = prob * 100),
-      ub_prob = stats::quantile(probs = 0.975, x = prob * 100)
+      mean_prob = mean(.data$prob * 100),
+      lb_prob = stats::quantile(probs = 0.025, x = .data$prob * 100),
+      ub_prob = stats::quantile(probs = 0.975, x = .data$prob * 100)
     ) %>%
     tidyr::pivot_longer(cols = c(
-      mean_prob,
-      lb_prob, ub_prob
+      .data$mean_prob,
+      .data$lb_prob, .data$ub_prob
     )) %>%
-    tidyr::pivot_wider(names_from = screening, values_from = value)
+    tidyr::pivot_wider(names_from = .data$screening, values_from = .data$value)
 }
