@@ -1,0 +1,53 @@
+Package: airportscreening
+Title: Run the CMMID Airport Screening Outcomes Shiny App
+Version: 0.0.0.9000
+Authors@R: 
+    c(
+        person(
+            given = "Billy",
+            family = "Quilty",
+            role = c("aut", "cre", "cph"),
+            email = "billy.quilty@lshtm.ac.uk"
+        ),
+        person(
+            given = "Sam",
+            family = "Clifford",
+            role = c("aut", "cph"),
+            email = "Sam.Clifford@lshtm.ac.uk"
+        ),
+        person(
+            given = "Stefan",
+            family = "Flasche",
+            role = c("aut", "cph"),
+            email = "Stefan.Flasche@lshtm.ac.uk"
+        ),
+        person(
+            given = "Rosalid",
+            family = "Eggo",
+            role = c("aut", "cph"),
+            email = "Rosalind.Eggo@lshtm.ac.uk"
+        )
+    )
+Description: Runs a Shiny app developed by the Centre for the Mathematical Modelling of Infectious Diseases (CMMID) to model the outcomes of implementing airport screening for potentially infected air passengers, given certain pathogen and air travel parameters, such as the time between infection and symptom onset, and the flight duration. This app was developed as part of the CMMID response to the Covid-19 pandemic, in early 2020.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.2
+Imports: 
+    checkmate,
+    dplyr,
+    emojifont,
+    ggplot2,
+    magrittr,
+    RColorBrewer,
+    rlang,
+    shiny,
+    tibble,
+    tidyr
+Suggests: 
+    shinytest2,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Depends: 
+    R (>= 2.10)
+LazyData: true

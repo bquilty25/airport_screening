@@ -1,44 +1,7 @@
 pacman::p_load(purrr,furrr,emojifont,gridExtra,knitr,kableExtra,tidyverse,dtplyr,tidyfast,data.table)
 
-source("utils.R")
-
-# Create Data
-pathogen <- list(
-  `COVID-19` = data.frame(
-    mu_inc    =  5.2,
-    sigma_inc =  4.1,
-    mu_inf    =  9.1,
-    sigma_inf = 14.7,
-    prop.asy  = 17
-  ),
-  `SARS-like (2002)` = data.frame(
-    mu_inc    =  6.4,
-    sigma_inc = 16.7,
-    mu_inf    =  3.8,
-    sigma_inf =  6.0,
-    prop.asy  =  0.0
-  ),
-  `Flu A/H1N1-like (2009)` = data.frame(
-    mu_inc    =  4.3,
-    sigma_inc =  1.05,
-    mu_inf    =  9.3,
-    sigma_inf =  0.7,
-    prop.asy  = 16.0
-  ),
-  `MERS-like (2012)` = data.frame(
-    mu_inc    =  5.5,
-    sigma_inc = 6.25,
-    mu_inf    =  5.0,
-    sigma_inf =  7.5,
-    prop.asy  = 21.0
-  )
-) %>%
-  dplyr::bind_rows(., .id = "name") %>%
-  mutate(sens.exit = 86,
-         sens.entry = 86,
-         prop.asy = 17) %>%
-  crossing(.,dur.flight1=1:12) %>%
-  mutate(dur.flight = dur.flight1)
+source("R/utils.R")
+source("data-raw/pathogen_parameters.R")
 
 detect_fun <- function(df){
   
@@ -64,63 +27,6 @@ detect_fun <- function(df){
            `Estimate (95% CI)`  = CI)
 
   est_df
-}
- 
-# Standard purrr
-tictoc::tic()  
-pathogen %>% 
-  mutate(n_rep=500) %>% 
-  group_by(name,dur.flight1) %>% 
-nest(.key="input") %>%
-  mutate(results=purrr::map(.x=input,
-                            .f=detect_fun)) %>% 
-  dt_unnest(results)
- tictoc::toc() 
- 
-# In parallel with furrr
-plan(multiprocess)
- 
- tictoc::tic()  
- pathogen %>% 
-   mutate(n_rep=500) %>% 
-   group_by(name,dur.flight1) %>% 
-   nest(.key="input") %>%
-   mutate(results=furrr::future_map(.x=input,
-                                    .f=detect_fun,
-                                    .progress=T))%>% 
-   unnest(results) %>% 
-   as_tibble()
- tictoc::toc() 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-
-  input <- pathogen %>% 
-  filter(name=="nCoV-2019") %>%
-  flatten() %>% 
-  list_modify(sens.exit=86,
-              sens.entry=0,
-              prop.asy=0,
-              dur.flight=12)
-
-  travellers <- generate_travellers(input, i = rep(10000, 1))
-  
-  
-  probs<- generate_probabilities(travellers)
-  
   
   waffle_labels <- data.frame(
     desc = factor(c(rep("detected at exit screening",
@@ -220,3 +126,33 @@ plan(multiprocess)
     guides(color=guide_legend(ncol=1)) 
   
   waffle_plot
+  
+  return(list(res=est_df,
+              plot=waffle_plot))
+}
+ 
+# Create Data
+scenarios <- pathogen_parameters %>%
+  mutate(sens.exit = 86,
+         sens.entry = 86,
+         prop.asy = 17) %>% 
+  crossing(.,dur.flight=1:12) %>% 
+  mutate(scenario=row_number(),
+         n_rep=1000) 
+
+# Run model
+tictoc::tic() 
+results <- scenarios %>% 
+  group_by(scenario) %>% 
+  group_split() %>%
+  purrr::map(~detect_fun(df=.x)) 
+tictoc::toc()
+
+# View results (table and plot) 
+map(results,1) %>% 
+  bind_rows(.id="scenario") %>% 
+  mutate(scenario = as.integer(scenario)) %>% 
+  left_join(scenarios)
+
+map(results,2)
+ 
