@@ -4,7 +4,7 @@ source("R/utils.R")
 source("data-raw/pathogen_parameters.R")
 
 detect_fun <- function(df){
-  
+  #browser()
   travellers <- generate_travellers(df, i = rep(100, df$n_rep))
   probs <- generate_probabilities(travellers)
   
@@ -128,7 +128,8 @@ detect_fun <- function(df){
   waffle_plot
   
   return(list(res=est_df,
-              plot=waffle_plot))
+              plot=waffle_plot,
+              prop_undetected=probs %>% slice(1) %>% select(prop_undetected)))
 }
  
 # Create Data
@@ -155,4 +156,38 @@ map(results,1) %>%
   left_join(scenarios)
 
 map(results,2)
+
+scenarios <- pathogen_parameters %>%
+  filter(name == "Custom") %>%
+  select(-prop.asy,-mu_inc) %>%
+  mutate(sens.exit = 86,
+         sens.entry = 86) %>%
+  crossing(prop.asy = seq(from=0.01,to=0.90,by=0.05), dur.flight = 6, mu_inc=5) %>%
+  mutate(scenario = row_number(),
+         n_rep = 1000)
+
+tictoc::tic() 
+
+# Run simulations for each scenario
+results <- scenarios %>% 
+  group_by(scenario) %>%                         # Group scenarios by scenario ID
+  group_split() %>%                              # Split groups into separate data frames
+  purrr::map(~ detect_fun(df = .x))              # Apply detect_fun to each split group
+
+# End timing the simulation and display elapsed time
+tictoc::toc()
+
+asym_fig<- map(results, 3) %>% 
+  bind_rows(.id = "scenario") %>%                # Combine results and add scenario ID column
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(scenarios) %>%                       # Add original scenario parameters
+  ggplot(aes(x = prop.asy, y = mu_inc, fill = prop_undetected)) + 
+  geom_tile()+  # Create a heatmap plot using ggplot2
+  labs(x = "Proportion asymptomatic") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(0.0,0.8,by=0.1))+
+  scale_y_continuous(breaks=seq(1,12.5,by=1)) +
+  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
+
+asym_fig
  
