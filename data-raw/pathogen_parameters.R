@@ -12,7 +12,7 @@ pathogen_parameters <- do.call(
       sigma_inc = 4.1,
       mu_inf = 9.1,
       sigma_inf = 14.7,
-      prop.asy = 17
+      prop.asy = 0.17
     ),
     data.frame(
       name = "SARS-like (2002)",
@@ -28,7 +28,7 @@ pathogen_parameters <- do.call(
       sigma_inc = 1.05,
       mu_inf = 9.3,
       sigma_inf = 0.7,
-      prop.asy = 16.0 # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4586318/
+      prop.asy = 0.16 # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4586318/
     ),
     data.frame(
       name = "MERS-like (2012)",
@@ -40,7 +40,7 @@ pathogen_parameters <- do.call(
       # nolint end
       mu_inf = 5.0, # https://www.nejm.org/doi/10.1056/NEJMoa1306742
       sigma_inf = 7.5,
-      prop.asy = 21.0
+      prop.asy = 0.21
       # nolint begin
       # https://doi.org/10.1016/j.tmaid.2018.12.003
       # citing https://www.who.int/csr/disease/coronavirus_infections/
@@ -53,7 +53,7 @@ pathogen_parameters <- do.call(
       sigma_inc = 5.0,
       mu_inf = 5.0,
       sigma_inf = 5.0,
-      prop.asy = 10.0
+      prop.asy = 0.5
     )
   )
 )

@@ -79,7 +79,7 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
 calc_probs <- function(dur.flight, mu_inc, sigma_inc,
                        mu_inf, sigma_inf, sens.exit,
                        sens.entry, prop.asy, sims) {
-
+#browser()
   # simulate infection histories
   .args <- as.list(match.call())[-1] # remove fn call
 
@@ -109,21 +109,21 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
       missed_at_exit = .data$symp_at_exit & !.data$exit_screening_label,
       found_at_entry = .data$symp_at_entry & .data$entry_screening_label,
       sev_at_exit = 0, # no hospitalised can exit country
-      sev_from_lat = (!.data$symp_at_exit) &
+      sev_from_inc = (!.data$symp_at_exit) &
         (.data$incu + .data$inf < .data$flight.arrival),
       sev_from_symp = .data$symp_at_exit & (!.data$exit_screening_label) &
         (.data$incu + .data$inf < .data$flight.arrival),
-      sev_at_entry = .data$sev_from_lat | .data$sev_from_symp,
+      sev_at_entry = .data$sev_from_inc | .data$sev_from_symp,
       found_at_entry_only = .data$found_at_entry & (!.data$symp_at_exit)
     )
 
   # summarise detection outcomes
-  infection_histories <-
+  infection_histories_summary <-
     dplyr::summarise(
       infection_histories,
-      prop_sev_at_entry = (1.0 - prop.asy / 100) * mean(.data$sev_at_entry),
-      prop_symp_at_exit = (1.0 - prop.asy / 100) * mean(.data$found_at_exit),
-      prop_symp_at_entry = (1.0 - prop.asy / 100) * mean(
+      prop_sev_at_entry = (1.0 - prop.asy) * mean(.data$sev_at_entry),
+      prop_symp_at_exit = (1.0 - prop.asy) * mean(.data$found_at_exit),
+      prop_symp_at_entry = (1.0 - prop.asy) * mean(
         (.data$missed_at_exit & .data$found_at_entry & !.data$sev_at_entry) |
           (.data$found_at_entry_only & !.data$sev_at_entry)
       )
@@ -134,7 +134,7 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
 
   # return dataframe converted to list object
   return(
-    as.list(infection_histories)
+    as.list(infection_histories_summary)
   )
 }
 
