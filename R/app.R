@@ -83,7 +83,7 @@ run_app <- function() {
           shiny::sliderInput(
             inputId = "prop.asy",
             label = "Proportion of cases that are asymptomatic",
-            value = 17, min = 0, max = 100, step = 1
+            value = 17, min = 0, max = 100, step = 1, post = " %"
           ),
           shiny::hr(),
           shiny::div(
@@ -156,7 +156,7 @@ run_app <- function() {
 
       shiny::updateNumericInput(session, "prop.asy",
         value = pathogen_parameters[pathogen_parameters$name ==
-          pathogen_input, ]$prop.asy
+          pathogen_input, ]$prop.asy*100
       )
       shiny::updateNumericInput(session, "mu_inc",
         value = pathogen_parameters[pathogen_parameters$name ==

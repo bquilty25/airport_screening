@@ -134,8 +134,8 @@ detect_fun <- function(df){
  
 # Create Data
 scenarios <- pathogen_parameters %>%
-  mutate(sens.exit = 86,
-         sens.entry = 86,
+  mutate(sens.exit = 0.86,
+         sens.entry = 0.86,
          prop.asy = 0.17) %>% 
   crossing(.,dur.flight=1:12) %>% 
   mutate(scenario=row_number(),
@@ -160,8 +160,8 @@ map(results,2)
 scenarios <- pathogen_parameters %>%
   filter(name == "Custom") %>%
   select(-prop.asy,-mu_inc) %>%
-  mutate(sens.exit = 86,
-         sens.entry = 86) %>%
+  mutate(sens.exit = 0.86,
+         sens.entry = 0.86) %>%
   crossing(prop.asy = seq(from=0.1,to=0.90,by=0.05), dur.flight = 6, mu_inc=1:14) %>%
   mutate(scenario = row_number(),
          n_rep = 1000)
