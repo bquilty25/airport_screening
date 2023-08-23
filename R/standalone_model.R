@@ -1,62 +1,7 @@
 pacman::p_load(purrr,furrr,emojifont,gridExtra,knitr,kableExtra,tidyverse,dtplyr,tidyfast,data.table)
 
 source("R/utils.R")
-
-pathogen_parameters <- do.call(
-  rbind,
-  list(
-    data.frame(
-      name = "nCoV-2019",
-      # (Li et al. (2020) NEJM)
-      mu_inc = 5.2,
-      sigma_inc = 4.1,
-      mu_inf = 9.1,
-      sigma_inf = 14.7,
-      prop.asy = 0.17
-    ),
-    data.frame(
-      name = "SARS-like (2002)",
-      mu_inc = 6.4,
-      sigma_inc = 16.7,
-      mu_inf = 3.8,
-      sigma_inf = 6.0,
-      prop.asy = 0.0
-    ),
-    data.frame(
-      name = "Flu A/H1N1-like (2009)",
-      mu_inc = 4.3,
-      sigma_inc = 1.05,
-      mu_inf = 9.3,
-      sigma_inf = 0.7,
-      prop.asy = 0.16 # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4586318/
-    ),
-    data.frame(
-      name = "MERS-like (2012)",
-      mu_inc = 5.5,
-      sigma_inc = 6.25,
-      # nolint begin
-      # https://www.sciencedirect.com/science/article/
-      # pii/S1473309913703049?via%3Dihub#sec1
-      # nolint end
-      mu_inf = 5.0, # https://www.nejm.org/doi/10.1056/NEJMoa1306742
-      sigma_inf = 7.5,
-      prop.asy = 0.21
-      # nolint begin
-      # https://doi.org/10.1016/j.tmaid.2018.12.003
-      # citing https://www.who.int/csr/disease/coronavirus_infections/
-      # risk-assessment-august-2018.pdf?ua=1
-      # nolint end
-    ),
-    data.frame(
-      name = "Custom",
-      mu_inc = 5.0,
-      sigma_inc = 5.0,
-      mu_inf = 5.0,
-      sigma_inf = 5.0,
-      prop.asy = 0.5
-    )
-  )
-)
+source("data-raw/pathogen_parameters.R")
 
 detect_fun <- function(df){
   #browser()
@@ -80,7 +25,7 @@ detect_fun <- function(df){
     arrange(name) %>%
     rename(`Detection outcome` = name,
            `Estimate (95% CI)`  = CI)
-
+  
   est_df
   
   waffle_labels <- data.frame(
@@ -184,43 +129,25 @@ detect_fun <- function(df){
   
   return(list(res=est_df,
               plot=waffle_plot,
-              prop_undetected=probs %>% slice(1) %>% select(prop_undetected)))
+              undetected=0.01*probs %>%filter(name=="mean_prob") %>%  select(prop_undetected)))
 }
- 
-# Create Data
+
+####################################################################################################
+
+#Incubation period model 
+
+# Initialize scenarios based on pathogen parameters
 scenarios <- pathogen_parameters %>%
-  mutate(sens.exit = 0.86,
-         sens.entry = 0.86,
-         prop.asy = 0.17) %>% 
-  crossing(.,dur.flight=1:12) %>% 
-  mutate(scenario=row_number(),
-         n_rep=1000) 
+  filter(name == "Custom") %>%                    # Select scenarios with name "Custom"
+  select(-mu_inc) %>%                             # Remove mu_inc column
+  mutate(sens.exit = 86,                          # Add sens.exit column with value 86
+         sens.entry = 86) %>%                        # Add prop.asy column
+  crossing(mu_inc = 1:21, dur.flight = 1:12) %>%  # Create combinations of mu_inc and dur.flight
+  mutate(scenario = row_number(),                 # Add scenario column with row numbers
+         n_rep = 1000)                            # Add n_rep column with value 1000
 
-# Run model
-tictoc::tic() 
-results <- scenarios %>% 
-  group_by(scenario) %>% 
-  group_split() %>%
-  purrr::map(~detect_fun(df=.x)) 
-tictoc::toc()
 
-# View results (table and plot) 
-map(results,1) %>% 
-  bind_rows(.id="scenario") %>% 
-  mutate(scenario = as.integer(scenario)) %>% 
-  left_join(scenarios)
-
-map(results,2)
-
-scenarios <- pathogen_parameters %>%
-  filter(name == "Custom") %>%
-  select(-prop.asy,-mu_inc) %>%
-  mutate(sens.exit = 0.86,
-         sens.entry = 0.86) %>%
-  crossing(prop.asy = seq(from=0.1,to=0.90,by=0.05), dur.flight = 6, mu_inc=1:14) %>%
-  mutate(scenario = row_number(),
-         n_rep = 1000)
-
+# Start timing the simulation
 tictoc::tic() 
 
 # Run simulations for each scenario
@@ -232,17 +159,266 @@ results <- scenarios %>%
 # End timing the simulation and display elapsed time
 tictoc::toc()
 
+# Process and combine the results of the first simulation element
+processed_results_1 <- map(results, 1) %>% 
+  bind_rows(.id = "scenario") %>%                # Combine results and add scenario ID column
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(scenarios)                           # Add original scenario parameters
+
+# Extract and display the second simulation element (no further processing mentioned)
+processed_results_2 <- map(results, 2)
+
+# Process and combine the results of the third simulation element, and create a heatmap plot
+incubation_fig<- map(results, 3) %>% 
+  bind_rows(.id = "scenario") %>%                # Combine results and add scenario ID column
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(scenarios) %>%                       # Add original scenario parameters
+  ggplot(aes(x = mu_inc, y = dur.flight, fill = prop_undetected)) + 
+  geom_tile()+  # Create a heatmap plot using ggplot2
+  labs(y = "Flight duration (Hours)", x = "Incubation Period (Days)") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(1,21,by=1))+
+  scale_y_continuous(breaks=seq(1,12.5,by=1)) +
+  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
+
+incubation_fig
+
+####################################################################################################
+
+#Asymptomatic period model 
+
+# Initialize scenarios based on pathogen parameters
+scenarios <- pathogen_parameters %>%
+  filter(name == "Custom") %>%
+  select(-prop.asy) %>%
+  mutate(sens.exit = 86,
+         sens.entry = 86) %>%
+  crossing(prop.asy = seq(from=0.01,to=0.90,by=0.05), dur.flight = 1:12) %>%
+  mutate(scenario = row_number(),
+         n_rep = 1000)
+
+# Start timing the simulation
+tictoc::tic() 
+
+# Run simulations for each scenario
+results <- scenarios %>% 
+  group_by(scenario) %>%                         # Group scenarios by scenario ID
+  group_split() %>%                              # Split groups into separate data frames
+  purrr::map(~ detect_fun(df = .x))              # Apply detect_fun to each split group
+
+# End timing the simulation and display elapsed time
+tictoc::toc()
+
+# Process and combine the results of the first simulation element
+processed_results_1 <- map(results, 1) %>% 
+  bind_rows(.id = "scenario") %>%                # Combine results and add scenario ID column
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(scenarios)                           # Add original scenario parameters
+
+# Extract and display the second simulation element (no further processing mentioned)
+processed_results_2 <- map(results, 2)
+
+# Process and combine the results of the third simulation element, and create a heatmap plot
 asym_fig<- map(results, 3) %>% 
   bind_rows(.id = "scenario") %>%                # Combine results and add scenario ID column
   mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
   left_join(scenarios) %>%                       # Add original scenario parameters
-  ggplot(aes(x = prop.asy, y = mu_inc, fill = prop_undetected)) + 
+  ggplot(aes(x = prop.asy, y = dur.flight, fill = prop_undetected)) + 
   geom_tile()+  # Create a heatmap plot using ggplot2
-  labs(x = "Proportion asymptomatic") +
+  labs(y = "Flight duration (Hours)", x = "Proportion asymptomatic") +
   theme_classic() +
   scale_x_continuous(breaks=seq(0.0,0.8,by=0.1))+
   scale_y_continuous(breaks=seq(1,12.5,by=1)) +
   theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
 
 asym_fig
- 
+
+
+####################################################################################################
+
+#Time to hospitalization period model 
+
+# Initialize scenarios based on pathogen parameters
+scenarios <- pathogen_parameters %>%
+  filter(name == "Custom") %>%
+  select(-mu_inf) %>%
+  mutate(sens.exit = 86,
+         sens.entry = 86) %>%
+  crossing(mu_inf = 1:14, dur.flight = 1:12) %>%
+  mutate(scenario = row_number(),
+         n_rep = 1000)
+
+
+# Start timing the simulation
+tictoc::tic() 
+
+# Run simulations for each scenario
+results <- scenarios %>% 
+  group_by(scenario) %>%                         # Group scenarios by scenario ID
+  group_split() %>%                              # Split groups into separate data frames
+  purrr::map(~ detect_fun(df = .x))              # Apply detect_fun to each split group
+
+# End timing the simulation and display elapsed time
+tictoc::toc()
+
+# Process and combine the results of the first simulation element
+processed_results_1 <- map(results, 1) %>% 
+  bind_rows(.id = "scenario") %>%                # Combine results and add scenario ID column
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(scenarios)                           # Add original scenario parameters
+
+# Extract and display the second simulation element (no further processing mentioned)
+processed_results_2 <- map(results, 2)
+
+# Process and combine the results of the third simulation element, and create a heatmap plot
+hosp_fig<- map(results, 3) %>% 
+  bind_rows(.id = "scenario") %>%                # Combine results and add scenario ID column
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(scenarios) %>%                       # Add original scenario parameters
+  ggplot(aes(x = mu_inf, y = dur.flight, fill = prop_undetected)) + 
+  geom_tile()+  # Create a heatmap plot using ggplot2
+  labs(y = "Flight duration (Hours)", x = "Symptom onset to hospitalisation (Days)") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(1,15,by=1))+
+  scale_y_continuous(breaks=seq(1,12.5,by=1)) +
+  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
+
+hosp_fig
+
+####################################################################################################
+
+#Sensitivty of screening
+
+# Initialize scenarios based on pathogen parameters
+
+scenarios <- pathogen_parameters %>%
+  filter(name == "Custom") %>%
+  mutate( dur.flight = 6,
+  ) %>%
+  crossing(sens.exit = 1:100, sens.entry = 1:100) %>%
+  mutate(scenario = row_number(),
+         n_rep = 1000)
+
+
+# Start timing the simulation
+tictoc::tic() 
+
+# Run simulations for each scenario
+results <- scenarios %>% 
+  group_by(scenario) %>%                         # Group scenarios by scenario ID
+  group_split() %>%                              # Split groups into separate data frames
+  purrr::map(~ detect_fun(df = .x))              # Apply detect_fun to each split group
+
+# End timing the simulation and display elapsed time
+tictoc::toc()
+
+# Process and combine the results of the first simulation element
+processed_results_1 <- map(results, 1) %>% 
+  bind_rows(.id = "scenario") %>%                # Combine results and add scenario ID column
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(scenarios)                           # Add original scenario parameters
+
+# Extract and display the second simulation element (no further processing mentioned)
+processed_results_2 <- map(results, 2)
+
+# Process and combine the results of the third simulation element, and create a heatmap plot
+sens.fig<- map(results, 3) %>% 
+  bind_rows(.id = "scenario") %>%                # Combine results and add scenario ID column
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(scenarios) %>%                       # Add original scenario parameters
+  ggplot(aes(x = sens.entry, y = sens.exit, fill = prop_undetected)) + 
+  geom_tile()+  # Create a heatmap plot using ggplot2
+  labs(y = "Sensitivity of exit screening", x = "Sensitivity of entry screening") +
+  theme_classic() +
+  #scale_x_continuous(breaks=seq(1,15,by=1))+
+  #scale_y_continuous(breaks=seq(1,12.5,by=1)) +
+  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
+
+sens.fig
+
+####################################################################################################
+
+#Sensitivity of entry screening vs. flight duration 
+
+#COVID-19
+
+# Initialize scenarios based on pathogen parameters
+scenarios <- pathogen_parameters %>%
+  filter(name == "nCoV-2019") %>%
+  mutate(sens.exit = 0,
+  ) %>%
+  crossing(sens.entry = 1:100, dur.flight = 1:12) %>%
+  mutate(scenario = row_number(),
+         n_rep = 1000)
+
+
+
+# Start timing the simulation
+tictoc::tic() 
+
+# Run simulations for each scenario
+results <- scenarios %>% 
+  group_by(scenario) %>%                         # Group scenarios by scenario ID
+  group_split() %>%                              # Split groups into separate data frames
+  purrr::map(~ detect_fun(df = .x))              # Apply detect_fun to each split group
+
+# End timing the simulation and display elapsed time
+tictoc::toc()
+
+
+# Process and combine the results of the third simulation element, and create a heatmap plot
+COV_sens.fig<- map(results, 3) %>% 
+  bind_rows(.id = "scenario") %>%                # Combine results and add scenario ID column
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(scenarios) %>%                       # Add original scenario parameters
+  ggplot(aes(x = sens.entry, y =dur.flight, fill = prop_undetected)) + 
+  geom_tile()+  # Create a heatmap plot using ggplot2
+  labs(y = "Flight duration (Hours)", x = "Sensitivity of entry screening") +
+  theme_classic() +
+  #scale_x_continuous(breaks=seq(1,15,by=1))+
+  scale_y_continuous(breaks=seq(1,12.5,by=1)) +
+  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
+
+COV_sens.fig
+
+
+#H1N1-Like
+
+# Initialize scenarios based on pathogen parameters
+scenarios <- pathogen_parameters %>%
+  filter(name == "Flu A/H1N1-like (2009)") %>%
+  mutate(sens.exit = 0,
+  ) %>%
+  crossing(sens.entry = 1:100, dur.flight = 1:12) %>%
+  mutate(scenario = row_number(),
+         n_rep = 1000)
+
+
+
+# Start timing the simulation
+tictoc::tic() 
+
+# Run simulations for each scenario
+results <- scenarios %>% 
+  group_by(scenario) %>%                         # Group scenarios by scenario ID
+  group_split() %>%                              # Split groups into separate data frames
+  purrr::map(~ detect_fun(df = .x))              # Apply detect_fun to each split group
+
+# End timing the simulation and display elapsed time
+tictoc::toc()
+
+
+# Process and combine the results of the third simulation element, and create a heatmap plot
+H1N1_sens.fig<- map(results, 3) %>% 
+  bind_rows(.id = "scenario") %>%                # Combine results and add scenario ID column
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(scenarios) %>%                       # Add original scenario parameters
+  ggplot(aes(x = sens.entry, y =dur.flight, fill = prop_undetected)) + 
+  geom_tile()+  # Create a heatmap plot using ggplot2
+  labs(y = "Flight duration (Hours)", x = "Sensitivity of entry screening") +
+  theme_classic() +
+  #scale_x_continuous(breaks=seq(1,15,by=1))+
+  scale_y_continuous(breaks=seq(1,12.5,by=1)) +
+  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
+
+H1N1_sens.fig
