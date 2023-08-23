@@ -229,6 +229,7 @@ asym_fig<- map(results, 3) %>%
   theme_classic() +
   scale_x_continuous(breaks=seq(0.0,0.8,by=0.1))+
   scale_y_continuous(breaks=seq(1,12.5,by=1)) +
+  scale_fill_viridis_c()+
   theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
 
 asym_fig
