@@ -49,12 +49,12 @@ time_to_event <- function(n, mean, var) {
 #' @return A data.frame of travel and infection outcomes.
 generate_histories <- function(dur.flight, mu_inc, sigma_inc,
                                mu_inf, sigma_inf, sens.exit,
-                               sens.entry, prop.asy, sims) {
+                               sens.entry, prop.asy, prop_inf_interest, prop_inf_other, sims) {
   tibble::tibble(
     incu = time_to_event(n = sims, mean = mu_inc, var = sigma_inc),
     inf = time_to_event(sims, mu_inf, sigma_inf),
     flight.departure = stats::runif(sims, min = 0, max = 2 * (.data$incu +
-      .data$inf)),
+                                                                .data$inf)),
     flight.arrival = .data$flight.departure + dur.flight
   )
 }
@@ -78,15 +78,15 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
 #' outcomes.
 calc_probs <- function(dur.flight, mu_inc, sigma_inc,
                        mu_inf, sigma_inf, sens.exit,
-                       sens.entry, prop.asy, sims) {
-#browser()
+                       sens.entry, prop.asy, prop_inf_interest, prop_inf_other, sims) {
+  #browser()
   # simulate infection histories
   .args <- as.list(match.call())[-1] # remove fn call
-
+  
   # convert flight time to days
   .args$dur.flight <- .args$dur.flight / 24.0
   infection_histories <- do.call(generate_histories, .args)
-
+  
   # simulate probabilities of different infection and travel related events
   infection_histories <- infection_histories %>%
     dplyr::mutate(
@@ -97,8 +97,11 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
     dplyr::mutate(
       exit_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.exit,
       entry_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.entry
+    ) %>%
+    dplyr::mutate( is_inf_interest = runif(n()) < prop_inf_interest,
+                   is_inf_other = runif(n()) < prop_inf_other
     )
-
+  
   # simulate different outcomes related to detection during travel
   infection_histories <-
     dplyr::mutate(
@@ -116,7 +119,7 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
       sev_at_entry = .data$sev_from_inc | .data$sev_from_symp,
       found_at_entry_only = .data$found_at_entry & (!.data$symp_at_exit)
     )
-
+  
   # summarise detection outcomes
   infection_histories_summary <-
     dplyr::summarise(
@@ -125,13 +128,15 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
       prop_symp_at_exit = (1.0 - prop.asy) * mean(.data$found_at_exit),
       prop_symp_at_entry = (1.0 - prop.asy) * mean(
         (.data$missed_at_exit & .data$found_at_entry & !.data$sev_at_entry) |
-          (.data$found_at_entry_only & !.data$sev_at_entry)
+          (.data$found_at_entry_only & !.data$sev_at_entry),
+        prop_inf_interest = mean(is_inf_interest),
+        prop_inf_other = mean(is_inf_other)
       )
     ) %>%
     dplyr::mutate(prop_undetected = 1.0 - (.data$prop_sev_at_entry +
-      .data$prop_symp_at_exit +
-      .data$prop_symp_at_entry))
-
+                                             .data$prop_symp_at_exit +
+                                             .data$prop_symp_at_entry))
+  
   # return dataframe converted to list object
   return(
     as.list(infection_histories_summary)
@@ -171,12 +176,13 @@ generate_travellers <- function(input, i) {
       list(
         input$dur.flight, input$mu_inc, input$sigma_inc,
         input$mu_inf, input$sigma_inf, input$sens.exit,
-        input$sens.entry, input$prop.asy,
+        input$sens.entry, input$prop.asy, input$prop_inf_interest, input$prop_inf_other,
         sims = i
       )
     )
   )
 }
+
 
 #' Work out the detection probabilities of travellers
 #'
