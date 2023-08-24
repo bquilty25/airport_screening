@@ -79,7 +79,7 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
 calc_probs <- function(dur.flight, mu_inc, sigma_inc,
                        mu_inf, sigma_inf, sens.exit,
                        sens.entry, prop.asy, sims) {
-browser()
+
   # simulate infection histories
   .args <- as.list(match.call())[-1] # remove fn call
 
