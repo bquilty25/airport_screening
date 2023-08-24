@@ -79,7 +79,7 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
 calc_probs <- function(dur.flight, mu_inc, sigma_inc,
                        mu_inf, sigma_inf, sens.exit,
                        sens.entry, prop.asy, sims) {
-#browser()
+browser()
   # simulate infection histories
   .args <- as.list(match.call())[-1] # remove fn call
 
@@ -95,8 +95,8 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
     ) %>%
     dplyr::filter(.data$hospitalised_prior_to_departure == FALSE) %>%
     dplyr::mutate(
-      exit_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.exit,
-      entry_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.entry
+      exit_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.exit/100,
+      entry_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.entry/100
     )
 
   # simulate different outcomes related to detection during travel
@@ -121,9 +121,9 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
   infection_histories_summary <-
     dplyr::summarise(
       infection_histories,
-      prop_sev_at_entry = (1.0 - prop.asy) * mean(.data$sev_at_entry),
-      prop_symp_at_exit = (1.0 - prop.asy) * mean(.data$found_at_exit),
-      prop_symp_at_entry = (1.0 - prop.asy) * mean(
+      prop_sev_at_entry = (1.0 - prop.asy/100) * mean(.data$sev_at_entry),
+      prop_symp_at_exit = (1.0 - prop.asy/100) * mean(.data$found_at_exit),
+      prop_symp_at_entry = (1.0 - prop.asy/100) * mean(
         (.data$missed_at_exit & .data$found_at_entry & !.data$sev_at_entry) |
           (.data$found_at_entry_only & !.data$sev_at_entry)
       )
