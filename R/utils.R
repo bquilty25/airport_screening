@@ -95,8 +95,8 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
     ) %>%
     dplyr::filter(.data$hospitalised_prior_to_departure == FALSE) %>%
     dplyr::mutate(
-      exit_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.exit,
-      entry_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.entry
+      exit_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.exit / 100,
+      entry_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.entry / 100
     )
 
   # simulate different outcomes related to detection during travel
