@@ -1,8 +1,7 @@
 pacman::p_load(purrr,furrr,emojifont,gridExtra,knitr,kableExtra,tidyverse,dtplyr,tidyfast,data.table)
 
-source("R/utils.R")
+source("utils_test.R")
 
-#Pathogen parameters
 pathogen_parameters <- do.call(
   rbind,
   list(
@@ -16,40 +15,7 @@ pathogen_parameters <- do.call(
       prop.asy = 0.17
     ),
     data.frame(
-      name = "SARS-like (2002)",
-      mu_inc = 6.4,
-      sigma_inc = 16.7,
-      mu_inf = 3.8,
-      sigma_inf = 6.0,
-      prop.asy = 0.0
-    ),
-    data.frame(
-      name = "Flu A/H1N1-like (2009)",
-      mu_inc = 4.3,
-      sigma_inc = 1.05,
-      mu_inf = 9.3,
-      sigma_inf = 0.7,
-      prop.asy = 0.16 # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4586318/
-    ),
-    data.frame(
-      name = "MERS-like (2012)",
-      mu_inc = 5.5,
-      sigma_inc = 6.25,
-      # nolint begin
-      # https://www.sciencedirect.com/science/article/
-      # pii/S1473309913703049?via%3Dihub#sec1
-      # nolint end
-      mu_inf = 5.0, # https://www.nejm.org/doi/10.1056/NEJMoa1306742
-      sigma_inf = 7.5,
-      prop.asy = 0.21
-      # nolint begin
-      # https://doi.org/10.1016/j.tmaid.2018.12.003
-      # citing https://www.who.int/csr/disease/coronavirus_infections/
-      # risk-assessment-august-2018.pdf?ua=1
-      # nolint end
-    ),
-    data.frame(
-      name = "Custom",
+      name = "irrelivent",
       mu_inc = 5.0,
       sigma_inc = 5.0,
       mu_inf = 5.0,
@@ -60,7 +26,7 @@ pathogen_parameters <- do.call(
 )
 
 detect_fun <- function(df){
-  #browser()
+browser()
   travellers <- generate_travellers(df, i = rep(100, df$n_rep))
   probs <- generate_probabilities(travellers)
   
@@ -185,16 +151,16 @@ detect_fun <- function(df){
   
   return(list(res=est_df,
               plot=waffle_plot,
-              undetected=0.01*probs %>%filter(name=="mean_prob") %>%  select(prop_undetected)))
+              prop_undetected=probs %>% slice(1) %>% select(prop_undetected)))
 }
-
 ####################################################################################################
+
 
 #Incubation period model 
 
 # Initialize scenarios based on pathogen parameters
 scenarios <- pathogen_parameters %>%
-  filter(name == "Custom") %>%                    # Select scenarios with name "Custom"
+  filter(name == "irrelivent") %>%                    # Select scenarios with name "Custom"
   select(-mu_inc) %>%                             # Remove mu_inc column
   mutate(sens.exit = 0.86,                          # Add sens.exit column with value 86
          sens.entry = 0.86) %>%                        # Add prop.asy column
@@ -239,3 +205,4 @@ incubation_fig<- map(results, 3) %>%
   theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
 
 incubation_fig
+
