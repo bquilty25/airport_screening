@@ -89,8 +89,8 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
 #' @return A data.frame with probabilities of different travel and infection
 #' outcomes.
 calc_probs <- function(dur.flight, mu_inc, sigma_inc,
-                       mu_inf, sigma_inf, sens.exit,
-                       sens.entry, prop.asy, sims) {
+                       mu_inf, sigma_inf, sens.exit, prop_fever, prop_relevant,
+                       sens.entry, prop.asy, sims, n_travellers) {
   
   # simulate infection histories
   .args <- as.list(match.call())[-1] # remove fn call
@@ -101,11 +101,6 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
   browser()
   # simulate probabilities of different infection and travel related events
   infection_histories <- infection_histories %>%
-    dplyr::mutate(
-      hospitalised_prior_to_departure = .data$inf + .data$incu <
-        .data$flight.departure
-    ) %>%
-    dplyr::filter(.data$hospitalised_prior_to_departure == FALSE) %>%
     dplyr::mutate(
       exit_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.exit/100,
       entry_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.entry/100
@@ -121,13 +116,6 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
       found_at_exit = .data$symp_at_exit & .data$exit_screening_label,
       missed_at_exit = .data$symp_at_exit & !.data$exit_screening_label,
       found_at_entry = .data$symp_at_entry & .data$entry_screening_label,
-      
-      sev_at_exit = 0, # no hospitalised can exit country
-      sev_from_inc = (!.data$symp_at_exit) &
-        (.data$incu + .data$inf < .data$flight.arrival),
-      sev_from_symp = .data$symp_at_exit & (!.data$exit_screening_label) &
-        (.data$incu + .data$inf < .data$flight.arrival),
-      sev_at_entry = .data$sev_from_inc | .data$sev_from_symp,
       found_at_entry_only = .data$found_at_entry & (!.data$symp_at_exit)
     )
   
@@ -135,15 +123,13 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
   infection_histories_summary <-
     dplyr::summarise(
       infection_histories,
-      prop_sev_at_entry = (1.0 - prop.asy/100) * mean(.data$sev_at_entry),
       prop_symp_at_exit = (1.0 - prop.asy/100) * mean(.data$found_at_exit),
       prop_symp_at_entry = (1.0 - prop.asy/100) * mean(
-        (.data$missed_at_exit & .data$found_at_entry & !.data$sev_at_entry) |
-          (.data$found_at_entry_only & !.data$sev_at_entry)
+        (.data$missed_at_exit & .data$found_at_entry) |
+          (.data$found_at_entry_only)
       )
     ) %>%
-    dplyr::mutate(prop_undetected = 1.0 - (.data$prop_sev_at_entry +
-                                             .data$prop_symp_at_exit +
+    dplyr::mutate(prop_undetected = 1.0 - (.data$prop_symp_at_exit +
                                              .data$prop_symp_at_entry))
   
   # return dataframe converted to list object
@@ -206,7 +192,6 @@ generate_probabilities <- function(travellers) {
       cols = c(
         .data$prop_symp_at_exit,
         .data$prop_symp_at_entry,
-        .data$prop_sev_at_entry,
         .data$prop_undetected
       ),
       names_to = "screening",
