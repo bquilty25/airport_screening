@@ -1,4 +1,3 @@
-
 #' Convert mean and variance to shape and rate for a gamma distribution
 #'
 #' @inheritParams time_to_event
@@ -47,17 +46,28 @@ time_to_event <- function(n, mean, var) {
 #' @importFrom rlang .data
 #' @keywords internal
 #' @return A data.frame of travel and infection outcomes.
+
 generate_histories <- function(dur.flight, mu_inc, sigma_inc,
-                               mu_inf, sigma_inf, sens.exit,
-                               sens.entry, prop.asy, sims) {
-  tibble::tibble(
-    incu = time_to_event(n = sims, mean = mu_inc, var = sigma_inc),
-    inf = time_to_event(sims, mu_inf, sigma_inf),
-    flight.departure = stats::runif(sims, min = 0, max = 2 * (.data$incu +
-      .data$inf)),
-    flight.arrival = .data$flight.departure + dur.flight
-  )
+                               mu_inf, sigma_inf, sens.exit, prop_fever, prop_relevant,
+                               sens.entry, prop.asy, sims, n_travellers) {
+  browser()
+  # Generate infection status for each individual (0 = not infected, 1 = infected)
+  data.frame(i=1:n_travellers) %>% 
+    rowwise() %>% 
+    mutate(fever_status =  rbinom(1, size = n(), prob = prop_fever),
+           relevant_infection_status = ifelse(fever_status==1,yes = rbinom(1, size = n(), prob = prop_relevant),no=0)) %>% 
+    mutate(
+      # Generate incubation times for each individual
+      incu = time_to_event(n = n(), mean = mu_inc, var = sigma_inc),
+      inf = time_to_event(n(), mu_inf, sigma_inf),
+      
+      # Generate flight departure and arrival times
+      flight.departure = stats::runif(n(), min = 0, max = 2 * (.data$incu + .data$inf)),
+      flight.arrival = .data$flight.departure + dur.flight
+    )
 }
+
+
 
 
 #' Calculate the probabilities of travel and infection outcomes
@@ -77,61 +87,74 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
 #' @return A data.frame with probabilities of different travel and infection
 #' outcomes.
 calc_probs <- function(dur.flight, mu_inc, sigma_inc,
-                       mu_inf, sigma_inf, sens.exit,
-                       sens.entry, prop.asy, sims) {
-
+                       mu_inf, sigma_inf, sens.exit, prop_fever, prop_relevant,
+                       sens.entry, prop.asy, sims, n_travellers) {
+  
   # simulate infection histories
   .args <- as.list(match.call())[-1] # remove fn call
-
+  
   # convert flight time to days
   .args$dur.flight <- .args$dur.flight / 24.0
   infection_histories <- do.call(generate_histories, .args)
-
+  browser()
   # simulate probabilities of different infection and travel related events
   infection_histories <- infection_histories %>%
     dplyr::mutate(
-      hospitalised_prior_to_departure = .data$inf + .data$incu <
-        .data$flight.departure
-    ) %>%
-    dplyr::filter(.data$hospitalised_prior_to_departure == FALSE) %>%
-    dplyr::mutate(
-      exit_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.exit/100,
-      entry_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.entry/100
+      exit_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.exit,
+      entry_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.entry
     )
-
+  
   # simulate different outcomes related to detection during travel
   infection_histories <-
     dplyr::mutate(
       infection_histories,
       symp_at_exit = .data$incu < .data$flight.departure,
       symp_at_entry = .data$incu < .data$flight.arrival,
-      found_at_exit = .data$symp_at_exit & .data$exit_screening_label,
-      missed_at_exit = .data$symp_at_exit & !.data$exit_screening_label,
-      found_at_entry = .data$symp_at_entry & .data$entry_screening_label,
-      sev_at_exit = 0, # no hospitalised can exit country
-      sev_from_inc = (!.data$symp_at_exit) &
-        (.data$incu + .data$inf < .data$flight.arrival),
-      sev_from_symp = .data$symp_at_exit & (!.data$exit_screening_label) &
-        (.data$incu + .data$inf < .data$flight.arrival),
-      sev_at_entry = .data$sev_from_inc | .data$sev_from_symp,
-      found_at_entry_only = .data$found_at_entry & (!.data$symp_at_exit)
+      
+      symp_fever_relevant_at_exit = .data$symp_at_exit & .data$exit_screening_label & .data$fever_status == 1 & .data$relevant_infection_status == 1,
+      symp_fever_relevant_at_entry = .data$symp_at_entry & .data$entry_screening_label & .data$fever_status == 1 & .data$relevant_infection_status == 1,
+      
+      symp_fever_irrelevant_at_exit = .data$symp_at_exit & .data$exit_screening_label & .data$fever_status == 1 & .data$relevant_infection_status == 0,
+      symp_fever_irrelevant_at_entry = .data$symp_at_entry & .data$entry_screening_label & .data$fever_status == 1 & .data$relevant_infection_status == 0,
+      
+      found_at_exit_relevant = .data$symp_fever_relevant_at_exit & .data$exit_screening_label,
+      found_at_exit_irrelevant = .data$ symp_fever_irrelevant_at_exit & .data$exit_screening_label,
+      
+      missed_at_exit_relevant = .data$symp_fever_relevant_at_exit & !.data$exit_screening_label,
+      missed_at_exit_irrelevant = .data$symp_fever_irrelevant_at_exit & !.data$exit_screening_label,
+      
+      found_at_entry_relevant = .data$ symp_fever_relevant_at_entry & .data$entry_screening_label,
+      found_at_entry_irrelevant = .data$  symp_fever_irrelevant_at_entry & .data$entry_screening_label,
+      
+      found_at_entry_only_relevant = .data$found_at_entry_relevant & (!.data$symp_fever_relevant_at_exit),
+      found_at_entry_only_irrelevant = .data$found_at_entry_irrelevant & (!.data$symp_fever_irrelevant_at_exit)
     )
-
+  
   # summarise detection outcomes
+
+  #Prop undetected relevent
+  
   infection_histories_summary <-
     dplyr::summarise(
       infection_histories,
-      prop_sev_at_entry = (1.0 - prop.asy/100) * mean(.data$sev_at_entry),
-      prop_symp_at_exit = (1.0 - prop.asy/100) * mean(.data$found_at_exit),
-      prop_symp_at_entry = (1.0 - prop.asy/100) * mean(
-        (.data$missed_at_exit & .data$found_at_entry & !.data$sev_at_entry) |
-          (.data$found_at_entry_only & !.data$sev_at_entry)
+      prop_symp_at_exit_relevant = (1.0 - prop.asy/100) * mean(.data$found_at_exit_relevant),
+      prop_symp_at_exit_irrelevant = (1.0 - prop.asy/100) * mean(.data$found_at_exit_irrelevant),
+      
+      prop_symp_at_entry_relevant = (1.0 - prop.asy/100) * mean(
+        (.data$missed_at_exit_relevant & .data$found_at_entry_relevant) |
+          (.data$found_at_entry_only_relevant)
+      ),
+      prop_symp_at_entry_irrelevant = (1.0 - prop.asy/100) * mean(
+        (.data$missed_at_exit_irrelevant & .data$found_at_entry_irrelevant) |
+          (.data$found_at_entry_only_irrelevant)
       )
     ) %>%
-    dplyr::mutate(prop_undetected = 1.0 - (.data$prop_sev_at_entry +
-      .data$prop_symp_at_exit +
-      .data$prop_symp_at_entry))
+    dplyr::mutate(prop_undetected_relevant = 1.0 - (.data$prop_symp_at_exit_relevant +
+                                             .data$prop_symp_at_entry_relevant))
+  
+ 
 
+  
   # return dataframe converted to list object
   return(
     as.list(infection_histories_summary)
@@ -192,7 +215,6 @@ generate_probabilities <- function(travellers) {
       cols = c(
         .data$prop_symp_at_exit,
         .data$prop_symp_at_entry,
-        .data$prop_sev_at_entry,
         .data$prop_undetected
       ),
       names_to = "screening",
