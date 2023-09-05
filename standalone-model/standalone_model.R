@@ -47,6 +47,14 @@ pathogen_parameters <- do.call(
       # risk-assessment-august-2018.pdf?ua=1
       # nolint end
     ),
+  data.frame(
+    name = "irrelevant",
+    mu_inc = 5.0,
+    sigma_inc = 5.0,
+    mu_inf = 5.0,
+    sigma_inf = 5.0,
+    prop.asy = 0.5
+  ),
     data.frame(
       name = "Custom",
       mu_inc = 5.0,
