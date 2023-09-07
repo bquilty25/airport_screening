@@ -187,6 +187,7 @@ make_ci_label <- function(x) {
 #' upon arrival and departure, given the pathogen parameters and flight duration
 #' and the proportions that have severe infections upon arrival, and also the
 #' proportion which is infected but undetected upon arrival.
+
 generate_travellers <- function(input, i) {
   as.data.frame(
     do.call(
@@ -194,7 +195,7 @@ generate_travellers <- function(input, i) {
       list(
         input$dur.flight, input$mu_inc, input$sigma_inc,
         input$mu_inf, input$sigma_inf, input$sens.exit,
-        input$sens.entry, input$prop.asy,
+        input$sens.entry, input$prop.asy, input$prop_fever, input$prop_relevant,input$n_travellers,
         sims = i
       )
     )
@@ -209,13 +210,17 @@ generate_travellers <- function(input, i) {
 #' @keywords internal
 #' @return A data.frame giving the probabilities of travellers who are infected
 #' being detected as such at different stages of airline travel.
+
 generate_probabilities <- function(travellers) {
   travellers %>%
     tidyr::pivot_longer(
       cols = c(
-        .data$prop_symp_at_exit,
-        .data$prop_symp_at_entry,
-        .data$prop_undetected
+        .data$prop_symp_at_exit_relevant,
+        .data$prop_symp_at_exit_irrelevant,
+        
+        .data$prop_symp_at_entry_relevant,
+        .data$prop_symp_at_entry_irrelevant,
+        .data$prop_undetected_relevant
       ),
       names_to = "screening",
       values_to = "prob"
