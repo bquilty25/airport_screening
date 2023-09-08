@@ -66,6 +66,7 @@ pathogen_parameters <- do.call(
   )
 )
 
+
 detect_fun <- function(df){
   #browser()
   travellers <- generate_travellers(df, i = rep(100, df$n_rep))
@@ -195,7 +196,6 @@ detect_fun <- function(df){
               prop_undetected=probs %>% slice(1) %>% select(prop_undetected)))
 }
  
-colnames(scenarios)
 
 # Create Data
 scenarios <- pathogen_parameters %>%
