@@ -195,14 +195,20 @@ detect_fun <- function(df){
               prop_undetected=probs %>% slice(1) %>% select(prop_undetected)))
 }
  
+colnames(scenarios)
+
 # Create Data
 scenarios <- pathogen_parameters %>%
-  mutate(sens.exit = 86,
-         sens.entry = 86,
-         prop.asy = 17) %>% 
-  crossing(.,dur.flight=1:12) %>% 
-  mutate(scenario=row_number(),
-         n_rep=1000) 
+  mutate(
+    sens.exit = 86,
+    sens.entry = 86,
+    prop.asy = 17,
+    prop_fever = 0.2,         # Example value for prop_fever
+    prop_relevant = 0.3,     # Example value for prop_relevant
+    n_travellers = 1000      # Example value for n_travellers
+  ) %>%
+  crossing(., dur.flight = 1:12) %>%
+  mutate(scenario = row_number(), n_rep = 1000)
 
 # Run model
 tictoc::tic() 
@@ -213,6 +219,22 @@ results <- scenarios %>%
 tictoc::toc()
 
 # View results (table and plot) 
+incubation_fig<- map(results, 3) %>% 
+  bind_rows(.id = "scenario") %>%                # Combine results and add scenario ID column
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(scenarios) %>%                       # Add original scenario parameters
+  ggplot(aes(x = mu_inc, y = dur.flight, fill = prop_undetected)) + 
+  geom_tile()+  # Create a heatmap plot using ggplot2
+  labs(y = "Flight duration (Hours)", x = "Incubation Period (Days)") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(1,21,by=1))+
+  scale_y_continuous(breaks=seq(1,12.5,by=1)) +
+  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
+
+incubation_fig
+
+
+
 map(results,1) %>% 
   bind_rows(.id="scenario") %>% 
   mutate(scenario = as.integer(scenario)) %>% 
@@ -220,6 +242,8 @@ map(results,1) %>%
 
 map(results,2)
 
+
+#########Asymptomatic############
 scenarios <- pathogen_parameters %>%
   filter(name == "Custom") %>%
   select(-prop.asy,-mu_inc) %>%

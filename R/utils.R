@@ -1,4 +1,5 @@
 #' Convert mean and variance to shape and rate for a gamma distribution
+#' 
 #'
 #' @inheritParams time_to_event
 #' @keywords internal
@@ -50,7 +51,7 @@ time_to_event <- function(n, mean, var) {
 generate_histories <- function(dur.flight, mu_inc, sigma_inc,
                                mu_inf, sigma_inf, sens.exit, prop_fever, prop_relevant,
                                sens.entry, prop.asy, sims, n_travellers) {
-  browser()
+  #browser()
   # Generate infection status for each individual (0 = not infected, 1 = infected)
   data.frame(i=1:n_travellers) %>% 
     rowwise() %>% 
@@ -96,7 +97,7 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
   # convert flight time to days
   .args$dur.flight <- .args$dur.flight / 24.0
   infection_histories <- do.call(generate_histories, .args)
-  browser()
+  #browser()
   # simulate probabilities of different infection and travel related events
   infection_histories <- infection_histories %>%
     dplyr::mutate(
@@ -131,8 +132,6 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
     )
   
   # summarise detection outcomes
-
-  #Prop undetected relevent
   
   infection_histories_summary <-
     dplyr::summarise(
