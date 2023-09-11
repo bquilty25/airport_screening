@@ -16,7 +16,7 @@ The package can be installed from Github using:
 
 ```r
 # install the devtools or remotes packages first
-devtools::install_github("pratikunterwegs/airportscreening")
+devtools::install_github("bquilty25/airport_screening")
 ```
 
 Run the app using the `run_app` function.

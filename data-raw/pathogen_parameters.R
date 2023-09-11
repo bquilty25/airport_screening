@@ -12,7 +12,7 @@ pathogen_parameters <- do.call(
       sigma_inc = 4.1,
       mu_inf = 9.1,
       sigma_inf = 14.7,
-      prop.asy = 0.17
+      prop.asy = 0.17*100
     ),
     data.frame(
       name = "SARS-like (2002)",
@@ -20,7 +20,7 @@ pathogen_parameters <- do.call(
       sigma_inc = 16.7,
       mu_inf = 3.8,
       sigma_inf = 6.0,
-      prop.asy = 0.0
+      prop.asy = 0.0*100
     ),
     data.frame(
       name = "Flu A/H1N1-like (2009)",
@@ -28,7 +28,7 @@ pathogen_parameters <- do.call(
       sigma_inc = 1.05,
       mu_inf = 9.3,
       sigma_inf = 0.7,
-      prop.asy = 0.16 # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4586318/
+      prop.asy = 0.16*100 # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4586318/
     ),
     data.frame(
       name = "MERS-like (2012)",
@@ -53,7 +53,7 @@ pathogen_parameters <- do.call(
       sigma_inc = 5.0,
       mu_inf = 5.0,
       sigma_inf = 5.0,
-      prop.asy = 0.5
+      prop.asy = 0.5*100
     )
   )
 )

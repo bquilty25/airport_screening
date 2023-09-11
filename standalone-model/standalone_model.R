@@ -57,6 +57,14 @@ pathogen_parameters <- do.call(
       # risk-assessment-august-2018.pdf?ua=1
       # nolint end
     ),
+  data.frame(
+    name = "irrelevant",
+    mu_inc = 5.0,
+    sigma_inc = 5.0,
+    mu_inf = 5.0,
+    sigma_inf = 5.0,
+    prop.asy = 0.5
+  ),
     data.frame(
       name = "Custom",
       mu_inc = 5.0,
@@ -82,7 +90,7 @@ detect_fun <- function(df){
     rownames_to_column(var = "name") %>%
     mutate(name = factor(name,
                          levels = c("prop_symp_at_exit",
-                                    "prop_sev_at_entry",
+                                  "prop_sev_at_entry",
                                     "prop_symp_at_entry",
                                     "prop_undetected"),
                          labels = c("Detected at exit",
@@ -199,22 +207,61 @@ detect_fun <- function(df){
               plot=waffle_plot,
               undetected=0.01*probs %>%filter(name=="mean_prob") %>%  select(prop_undetected)))
 }
-
-####################################################################################################
-
-
-#Incubation period model 
-
-# Initialize scenarios based on pathogen parameters
+# Create Data
 scenarios <- pathogen_parameters %>%
-  filter(name == "Custom") %>%                    # Select scenarios with name "Custom"
-  select(-mu_inc) %>%                             # Remove mu_inc column
-  mutate(sens.exit = 0.86,                          # Add sens.exit column with value 86
-         sens.entry = 0.86) %>%                        # Add prop.asy column
-  crossing(mu_inc = 1:21, dur.flight = 1:12) %>%  # Create combinations of mu_inc and dur.flight
-  mutate(scenario = row_number(),                 # Add scenario column with row numbers
-         n_rep = 1000)                            # Add n_rep column with value 1000
+  mutate(
+    sens.exit = 86,
+    sens.entry = 86,
+    prop.asy = 17,
+    prop_fever = 0.2,         # Example value for prop_fever
+    prop_relevant = 0.3,     # Example value for prop_relevant
+    n_travellers = 1000      # Example value for n_travellers
+  ) %>%
+  crossing(., dur.flight = 1:12) %>%
+  mutate(scenario = row_number(), n_rep = 1000)
 
+# Run model
+tictoc::tic() 
+results <- scenarios %>% 
+  group_by(scenario) %>% 
+  group_split() %>%
+  purrr::map(~detect_fun(df=.x)) 
+tictoc::toc()
+
+# View results (table and plot) 
+incubation_fig<- map(results, 3) %>% 
+  bind_rows(.id = "scenario") %>%                # Combine results and add scenario ID column
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(scenarios) %>%                       # Add original scenario parameters
+  ggplot(aes(x = mu_inc, y = dur.flight, fill = prop_undetected)) + 
+  geom_tile()+  # Create a heatmap plot using ggplot2
+  labs(y = "Flight duration (Hours)", x = "Incubation Period (Days)") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(1,21,by=1))+
+  scale_y_continuous(breaks=seq(1,12.5,by=1)) +
+  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
+
+incubation_fig
+
+
+
+map(results,1) %>% 
+  bind_rows(.id="scenario") %>% 
+  mutate(scenario = as.integer(scenario)) %>% 
+  left_join(scenarios)
+
+map(results,2)
+
+
+#########Asymptomatic############
+scenarios <- pathogen_parameters %>%
+  filter(name == "Custom") %>%
+  select(-prop.asy,-mu_inc) %>%
+  mutate(sens.exit = 86,
+         sens.entry = 86) %>%
+  crossing(prop.asy = seq(from=1,to=90,by=5), dur.flight = 6, mu_inc=1:14) %>%
+  mutate(scenario = row_number(),
+         n_rep = 1000)
 
 # Start timing the simulation
 tictoc::tic() 
