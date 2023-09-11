@@ -88,23 +88,21 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
 #' @return A data.frame with probabilities of different travel and infection
 #' outcomes.
 calc_probs <- function(dur.flight, mu_inc, sigma_inc,
-                       mu_inf, sigma_inf, sens.exit,
-                       sens.entry, prop.asy, prop_inf_interest, prop_inf_other, sims) {
+                       mu_inf, sigma_inf, sens.exit, prop_fever, prop_relevant,
+                       sens.entry, prop.asy, sims, n_travellers) {
+  
   # simulate infection histories
   .args <- as.list(match.call())[-1] # remove fn call
   
   # convert flight time to days
   .args$dur.flight <- .args$dur.flight / 24.0
   infection_histories <- do.call(generate_histories, .args)
-
+  #browser()
   # simulate probabilities of different infection and travel related events
   infection_histories <- infection_histories %>%
     dplyr::mutate(
       exit_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.exit,
       entry_screening_label = stats::runif(dplyr::n(), 0, 1) < sens.entry
-    ) %>%
-    dplyr::mutate( is_inf_interest = runif(n()) < prop_inf_interest,
-                   is_inf_other = runif(n()) < prop_inf_other
     )
   
   # simulate different outcomes related to detection during travel
@@ -133,7 +131,7 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
       found_at_entry_only_irrelevant = .data$found_at_entry_irrelevant & (!.data$symp_fever_irrelevant_at_exit)
     )
   
-  # summarise detection outcomes
+  # summaries detection outcomes
   
   infection_histories_summary <-
     dplyr::summarise(
@@ -151,10 +149,10 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
       )
     ) %>%
     dplyr::mutate(prop_undetected_relevant = 1.0 - (.data$prop_symp_at_exit_relevant +
-                                             .data$prop_symp_at_entry_relevant))
+                                                      .data$prop_symp_at_entry_relevant))
   
- 
-
+  
+  
   
   # return dataframe converted to list object
   return(
@@ -202,7 +200,6 @@ generate_travellers <- function(input, i) {
     )
   )
 }
-
 
 #' Work out the detection probabilities of travellers
 #'
