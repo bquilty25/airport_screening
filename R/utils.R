@@ -68,9 +68,6 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
     )
 }
 
-
-
-
 #' Calculate the probabilities of travel and infection outcomes
 #'
 #' @param dur.flight The flight duration in hours.
@@ -119,7 +116,7 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
       symp_fever_irrelevant_at_entry = .data$symp_at_entry & .data$entry_screening_label & .data$fever_status == 1 & .data$relevant_infection_status == 0,
       
       found_at_exit_relevant = .data$symp_fever_relevant_at_exit & .data$exit_screening_label,
-      found_at_exit_irrelevant = .data$ symp_fever_irrelevant_at_exit & .data$exit_screening_label,
+      found_at_exit_irrelevant = .data$symp_fever_irrelevant_at_exit & .data$exit_screening_label,
       
       missed_at_exit_relevant = .data$symp_fever_relevant_at_exit & !.data$exit_screening_label,
       missed_at_exit_irrelevant = .data$symp_fever_irrelevant_at_exit & !.data$exit_screening_label,
