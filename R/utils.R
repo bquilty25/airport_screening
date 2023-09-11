@@ -124,8 +124,8 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
       missed_at_exit_relevant = .data$symp_fever_relevant_at_exit & !.data$exit_screening_label,
       missed_at_exit_irrelevant = .data$symp_fever_irrelevant_at_exit & !.data$exit_screening_label,
       
-      found_at_entry_relevant = .data$ symp_fever_relevant_at_entry & .data$entry_screening_label,
-      found_at_entry_irrelevant = .data$  symp_fever_irrelevant_at_entry & .data$entry_screening_label,
+      found_at_entry_relevant = .data$symp_fever_relevant_at_entry & .data$entry_screening_label,
+      found_at_entry_irrelevant = .data$symp_fever_irrelevant_at_entry & .data$entry_screening_label,
       
       found_at_entry_only_relevant = .data$found_at_entry_relevant & (!.data$symp_fever_relevant_at_exit),
       found_at_entry_only_irrelevant = .data$found_at_entry_irrelevant & (!.data$symp_fever_irrelevant_at_exit)
