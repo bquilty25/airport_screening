@@ -48,15 +48,18 @@ time_to_event <- function(n, mean, var) {
 #' @keywords internal
 #' @return A data.frame of travel and infection outcomes.
 
+
 generate_histories <- function(dur.flight, mu_inc, sigma_inc,
                                mu_inf, sigma_inf, sens.exit, prop_fever, prop_relevant,
                                sens.entry, prop.asy, sims, n_travellers) {
-  #browser()
+ 
   # Generate infection status for each individual (0 = not infected, 1 = infected)
   data.frame(i=1:n_travellers) %>% 
     rowwise() %>% 
-    mutate(fever_status =  rbinom(1, size = n(), prob = prop_fever),
-           relevant_infection_status = ifelse(fever_status==1,yes = rbinom(1, size = n(), prob = prop_relevant),no=0)) %>% 
+    mutate(fever_status = rbinom(1, size = 1, prob = prop_fever > runif(1)),
+           elevant_infection_status = ifelse(fever_status == 1, 
+                                             rbinom(1, size = 1, prob = prop_relevant > runif(1)), 
+                                             0)) %>% 
     mutate(
       # Generate incubation times for each individual
       incu = time_to_event(n = n(), mean = mu_inc, var = sigma_inc),
@@ -67,6 +70,8 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
       flight.arrival = .data$flight.departure + dur.flight
     )
 }
+
+
 
 #' Calculate the probabilities of travel and infection outcomes
 #'
@@ -94,7 +99,7 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
   # convert flight time to days
   .args$dur.flight <- .args$dur.flight / 24.0
   infection_histories <- do.call(generate_histories, .args)
-  #browser()
+  browser()
   # simulate probabilities of different infection and travel related events
   infection_histories <- infection_histories %>%
     dplyr::mutate(

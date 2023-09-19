@@ -67,7 +67,7 @@ pathogen_parameters <- do.call(
 )
 
 detect_fun <- function(df){
-  #browser()
+  browser()
   travellers <- generate_travellers(df, i = rep(100, df$n_rep))
   probs <- generate_probabilities(travellers)
   
@@ -189,7 +189,7 @@ detect_fun <- function(df){
   
   return(list(res=est_df,
               plot=waffle_plot,
-              prop_undetected_relevant=probs %>% slice(1) %>% select(prop_undetected_relevant)))
+              prop_undetected=probs %>% slice(1) %>% select(prop_undetected)))
 }
 
 
