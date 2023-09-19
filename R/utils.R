@@ -56,9 +56,9 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
   # Generate infection status for each individual (0 = not infected, 1 = infected)
   data.frame(i=1:n_travellers) %>% 
     rowwise() %>% 
-    mutate(fever_status = rbinom(1, size = 1, prob = prop_fever > runif(1)),
-           elevant_infection_status = ifelse(fever_status == 1, 
-                                             rbinom(1, size = 1, prob = prop_relevant > runif(1)), 
+    mutate(fever_status = rbinom(1, size = 1, prob = prop_fever > runif(n=n())),
+           relevant_infection_status = ifelse(fever_status == 1, 
+                                             rbinom(1, size = 1, prob = prop_relevant > runif(n=n())), 
                                              0)) %>% 
     mutate(
       # Generate incubation times for each individual
