@@ -67,7 +67,6 @@ pathogen_parameters <- do.call(
 )
 
 detect_fun <- function(df){
-  browser()
   travellers <- generate_travellers(df, i = rep(100, df$n_rep))
   probs <- generate_probabilities(travellers)
   
@@ -187,9 +186,10 @@ detect_fun <- function(df){
   
   waffle_plot
   
+  #browser()
   return(list(res=est_df,
               plot=waffle_plot,
-              prop_undetected=probs %>% slice(1) %>% select(prop_undetected)))
+              prop=probs))
 }
 
 
@@ -219,7 +219,7 @@ incubation_fig<- map(results, 3) %>%
   bind_rows(.id = "scenario") %>%                # Combine results and add scenario ID column
   mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
   left_join(scenarios) %>%                       # Add original scenario parameters
-  ggplot(aes(x = mu_inc, y = dur.flight, fill = prop_undetected)) + 
+  ggplot(aes(x = mu_inc, y = dur.flight, fill = prop)) + 
   geom_tile()+  # Create a heatmap plot using ggplot2
   labs(y = "Flight duration (Hours)", x = "Incubation Period (Days)") +
   theme_classic() +

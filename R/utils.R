@@ -99,7 +99,7 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
   # convert flight time to days
   .args$dur.flight <- .args$dur.flight / 24.0
   infection_histories <- do.call(generate_histories, .args)
-  browser()
+  #browser()
   # simulate probabilities of different infection and travel related events
   infection_histories <- infection_histories %>%
     dplyr::mutate(
@@ -220,6 +220,7 @@ generate_probabilities <- function(travellers) {
         .data$prop_symp_at_exit_irrelevant,
         
         .data$prop_symp_at_entry_relevant,
+        
         .data$prop_symp_at_entry_irrelevant,
         .data$prop_undetected_relevant
       ),
