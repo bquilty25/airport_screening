@@ -193,8 +193,10 @@ detect_fun <- function(df){
 }
 
 
+
 # Create Data
 scenarios <- pathogen_parameters %>%
+  select(-mu_inc) %>%
   mutate(
     sens.exit = 86,
     sens.entry = 86,
@@ -203,10 +205,11 @@ scenarios <- pathogen_parameters %>%
     prop_relevant = 0.3,     # Example value for prop_relevant
     n_travellers = 1000      # Example value for n_travellers
   ) %>%
-  crossing(., dur.flight = 1:12) %>%
+  crossing(mu_inc = 1:5, dur.flight = 1:5) %>%
   mutate(scenario = row_number(), n_rep = 1000)
 
 # Run model
+
 tictoc::tic() 
 results <- scenarios %>% 
   group_by(scenario) %>% 
@@ -214,13 +217,15 @@ results <- scenarios %>%
   purrr::map(~detect_fun(df=.x)) 
 tictoc::toc()
 
-# View results (table and plot) 
-incubation_fig<- map(results, 3) %>% 
-  bind_rows(.id = "scenario") %>%                # Combine results and add scenario ID column
+
+# View results (table and plot)
+
+incubation_fig <- map_dfr(results, 3, .id= "scenario") %>% 
+  filter(name == "mean_prob") %>%
   mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
-  left_join(scenarios) %>%                       # Add original scenario parameters
-  ggplot(aes(x = mu_inc, y = dur.flight, fill = prop)) + 
-  geom_tile()+  # Create a heatmap plot using ggplot2
+  left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
+  ggplot(aes(x = mu_inc, y = dur.flight, fill = prop_undetected_relevant)) + 
+  geom_tile() +  # Create a heatmap plot using ggplot2
   labs(y = "Flight duration (Hours)", x = "Incubation Period (Days)") +
   theme_classic() +
   scale_x_continuous(breaks=seq(1,21,by=1))+
