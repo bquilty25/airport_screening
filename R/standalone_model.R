@@ -12,7 +12,8 @@ pathogen_parameters <- do.call(
       sigma_inc = 4.1,
       mu_inf = 9.1,
       sigma_inf = 14.7,
-      prop.asy = 0.17
+      prop.asy = 0.17,
+      prop_relevant = 0.03
     ),
     data.frame(
       name = "SARS-like (2002)",
@@ -20,7 +21,8 @@ pathogen_parameters <- do.call(
       sigma_inc = 16.7,
       mu_inf = 3.8,
       sigma_inf = 6.0,
-      prop.asy = 0.0
+      prop.asy = 0.0,
+      prop_relevant = 0.03
     ),
     data.frame(
       name = "Flu A/H1N1-like (2009)",
@@ -28,7 +30,8 @@ pathogen_parameters <- do.call(
       sigma_inc = 1.05,
       mu_inf = 9.3,
       sigma_inf = 0.7,
-      prop.asy = 0.16 # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4586318/
+      prop.asy = 0.16,# https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4586318/
+      prop_relevant = 0.03 # 
     ),
     data.frame(
       name = "MERS-like (2012)",
@@ -40,7 +43,8 @@ pathogen_parameters <- do.call(
       # nolint end
       mu_inf = 5.0, # https://www.nejm.org/doi/10.1056/NEJMoa1306742
       sigma_inf = 7.5,
-      prop.asy = 0.21
+      prop.asy = 0.21,
+      prop_relevant = 0.03
       # nolint begin
       # https://doi.org/10.1016/j.tmaid.2018.12.003
       # citing https://www.who.int/csr/disease/coronavirus_infections/
@@ -53,19 +57,24 @@ pathogen_parameters <- do.call(
       sigma_inc = 5.0,
       mu_inf = 5.0,
       sigma_inf = 5.0,
-      prop.asy = 0.5
+      prop.asy = 0.5,
+      prop_relevant = 0.03
     ),
     data.frame(
       name = "Custom",
-      mu_inc = 5.0,
-      sigma_inc = 5.0,
-      mu_inf = 5.0,
-      sigma_inf = 5.0,
-      prop.asy = 0.5
+      mu_inc = 5.2,
+      sigma_inc = 4.1,
+      mu_inf = 9.1,
+      sigma_inf = 14.7,
+      prop.asy = 0.17,
+      prop_relevant = 0.03 # Proportion of fever cases that are COVID
     )
   )
 )
 
+
+
+###### Detect function ##########
 detect_fun <- function(df){
   travellers <- generate_travellers(df, i = rep(100, df$n_rep))
   probs <- generate_probabilities(travellers)
@@ -91,6 +100,8 @@ detect_fun <- function(df){
            `Estimate (95% CI)`  = CI)
   
   est_df
+  
+  ###### Waffle plot #######
   
   waffle_labels <- data.frame(
     desc = factor(c(rep("detected at exit screening relevent",
@@ -196,20 +207,20 @@ detect_fun <- function(df){
 
 # Create Data
 scenarios <- pathogen_parameters %>%
-  select(-mu_inc) %>%
+  filter(name == "Custom") %>%                    # Select scenarios with name "Custom"                       
   mutate(
     sens.exit = 86,
     sens.entry = 86,
-    prop.asy = 17,
-    prop_fever = 0.2,         # Example value for prop_fever
-    prop_relevant = 0.3,     # Example value for prop_relevant
+    prop_fever = 0.0005,        #Proportion of travelers that have fever 
     n_travellers = 1000      # Example value for n_travellers
-  ) %>%
-  crossing(mu_inc = 1:5, dur.flight = 1:5) %>%
-  mutate(scenario = row_number(), n_rep = 1000)
+  ) %>%                    
+  crossing(.,dur.flight=1:12) %>% # Create combinations of mu_inc and dur.flight
+  mutate(scenario = row_number(),                 # Add scenario column with row numbers
+         n_rep = 1000)                            # Add n_rep column with value 1000
+
+
 
 # Run model
-
 tictoc::tic() 
 results <- scenarios %>% 
   group_by(scenario) %>% 
