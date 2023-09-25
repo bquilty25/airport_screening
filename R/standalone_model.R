@@ -212,7 +212,7 @@ scenarios <- pathogen_parameters %>%
     sens.exit = 86,
     sens.entry = 86,
     prop_fever = 0.0005,        #Proportion of travelers that have fever 
-    n_travellers = 1000      # Example value for n_travellers
+    n_travellers = 6994000      # Example value for n_travellers
   ) %>%                    
   crossing(.,dur.flight=1:12) %>% # Create combinations of mu_inc and dur.flight
   mutate(scenario = row_number(),                 # Add scenario column with row numbers
@@ -253,6 +253,51 @@ map(results,1) %>%
   left_join(scenarios)
 
 map(results,2)
+
+########### UK sim ##########################################################
+
+#6,994,000 travelers Q1 2020 
+
+
+#Data for UK sim 
+scenarios <- pathogen_parameters %>%
+  filter(name == "Custom") %>%                                       
+  mutate(
+    sens.exit = 86,
+    sens.entry = 86,
+    prop_fever = 0.0005,        #Proportion of travelers that have fever 
+    n_travellers = 6994000      # Number of travellers Q1 UK
+  ) %>%                    
+  crossing(.,dur.flight=1:12) %>% 
+  mutate(scenario = row_number(),                 # Add scenario column with row numbers
+         n_rep = 1000)                            # Add n_rep column with value 1000
+
+
+# Run model
+tictoc::tic() 
+results <- scenarios %>% 
+  group_by(scenario) %>% 
+  group_split() %>%
+  purrr::map(~detect_fun(df=.x)) 
+tictoc::toc()
+
+
+#UK sim fig
+UK_fig <- map_dfr(results, 3, .id= "scenario") %>% 
+  filter(name == "mean_prob") %>%
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
+  
+  ggplot(aes(x = mu_inc, y = dur.flight, fill = prop_undetected_relevant)) + 
+  geom_tile() +  # Create a heatmap plot using ggplot2
+  labs(y = "Flight duration (Hours)", x = "Incubation Period (Days)") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(1,21,by=1))+
+  scale_y_continuous(breaks=seq(1,12.5,by=1)) +
+  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
+
+UK_fig
+
 
 
 #########Asymptomatic############
