@@ -106,18 +106,30 @@ detect_fun <- function(df){
   waffle_labels <- data.frame(
     desc = factor(c(rep("detected at exit screening relevent",
                         round(probs$prop_symp_at_exit_relevant)[1]),
-                    rep("detected at entry screening relevent",
+                   
+                     rep("detected at entry screening relevent",
                         round(probs$prop_symp_at_entry_relevant)[1]),
+                   
+                     rep("detected at exit screening irrelevant",
+                       round(probs$prop_symp_at_exit_irrelevant)[1]),
+                    
+                    rep("detected at entry screening irrelevent",
+                        round(probs$prop_symp_at_entry_irrelevant)[1]),
+                    
                     rep("not detected relevent",
                         # this is here to make sure we always sum to 100
                         #round(100*(1 - (probs$prob_det_exit + probs$prob_det_entry)),2))),
                         100 - (round(probs$prop_symp_at_exit_relevant[1]) + 
-                                 round(probs$prop_symp_at_entry_relevant)[1]))),
+                                 round(probs$prop_symp_at_entry_relevant[1]) +
+                                 round(probs$prop_symp_at_exit_irrelevant[1]) +
+                                 round(probs$prop_symp_at_entry_irrelevant)[1]))),
                   ordered = T)) %>%
     mutate(
       desc = factor(desc,
                     levels = c("detected at exit screening relevent",
                                "detected at entry screening relevent",
+                               "detected at exit screening irrelevant",
+                               "detected at entry screening irrelevant",
                                "not detected relevent")))
   
   
@@ -136,7 +148,9 @@ detect_fun <- function(df){
     #mutate(group=as.factor(group),
     mutate(label=fontawesome(case_when(
       desc == "detected at exit screening relevent"   ~ "fa-user",
-      desc == "detected at entry screening relevent"  ~ "fa-user-circle",
+      desc == "detected at entry screening relevent"  ~ "fa-user",
+      desc == "detected at exit screening irrelevant"  ~ "fa-user-circle",
+      desc == "detected at entry screening irrelevant"  ~ "fa-user-circle",
       desc == "not detected relevent"                 ~ "fa-user-circle")))
   
   
@@ -152,6 +166,7 @@ detect_fun <- function(df){
     waffle_counts_df %>%
     filter(desc %in% c("detected at entry screening relevent")) %>%
     summarise(N = sum(n)) %>% pull(N)
+
   
   waffle_counts_vec        <- waffle_counts_df$n
   names(waffle_counts_vec) <- waffle_counts_df$desc
@@ -212,7 +227,7 @@ scenarios <- pathogen_parameters %>%
     sens.exit = 86,
     sens.entry = 86,
     prop_fever = 0.0005,        #Proportion of travelers that have fever 
-    n_travellers = 6994000      # Example value for n_travellers
+    n_travellers = 1000      # Example value for n_travellers
   ) %>%                    
   crossing(.,dur.flight=1:12) %>% # Create combinations of mu_inc and dur.flight
   mutate(scenario = row_number(),                 # Add scenario column with row numbers
