@@ -92,7 +92,7 @@ detect_fun <- function(df){
                          labels = c("Detected at exit relevent",
                                     "Detected at exit irrelevent",
                                     "Detected on entry relevent",
-                                    "Detected at entry relevent",
+                                    "Detected at entry irrelevent",
                                     "Not detected relevent"),
                          ordered = TRUE)) %>%
     arrange(name) %>%
