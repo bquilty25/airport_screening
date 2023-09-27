@@ -113,7 +113,7 @@ detect_fun <- function(df){
                      rep("detected at exit screening irrelevant",
                        round(probs$prop_symp_at_exit_irrelevant)[1]),
                     
-                    rep("detected at entry screening irrelevent",
+                    rep("detected at entry screening irrelevant",
                         round(probs$prop_symp_at_entry_irrelevant)[1]),
                     
                     rep("not detected relevent",
@@ -154,7 +154,7 @@ detect_fun <- function(df){
       desc == "not detected relevent"                 ~ "fa-user-circle")))
   
   
-  waffle_colors <- RColorBrewer::brewer.pal(4, name = "Set2")[c(1,4,3,2)]
+  waffle_colors <- RColorBrewer::brewer.pal(4, name = "Set2")[c(1,4,3,2,4)]
   
   waffle_counts_df <- count(waffle_data, desc, name = "n")
   
@@ -224,10 +224,11 @@ detect_fun <- function(df){
 scenarios <- pathogen_parameters %>%
   filter(name == "Custom") %>%                    # Select scenarios with name "Custom"                       
   mutate(
-    sens.exit = 86,
+    sens.exit = 0,
     sens.entry = 86,
     prop_fever = 0.0005,        #Proportion of travelers that have fever 
-    n_travellers = 1000      # Example value for n_travellers
+    n_travellers = 41,365       #Number of travelers
+     
   ) %>%                    
   crossing(.,dur.flight=1:12) %>% # Create combinations of mu_inc and dur.flight
   mutate(scenario = row_number(),                 # Add scenario column with row numbers
@@ -271,19 +272,20 @@ map(results,2)
 
 ########### UK sim ##########################################################
 
-#6,994,000 travelers Q1 2020 
+#41,365 visitors form China to the UK Q1 2020 
 
 
 #Data for UK sim 
 scenarios <- pathogen_parameters %>%
-  filter(name == "Custom") %>%                                       
+  filter(name == "Custom") %>%                    # Select scenarios with name "Custom"                       
   mutate(
-    sens.exit = 86,
+    sens.exit = 0,
     sens.entry = 86,
     prop_fever = 0.0005,        #Proportion of travelers that have fever 
-    n_travellers = 6994000      # Number of travellers Q1 UK
+    n_travellers = 41365,       #Number of travelers
+    dur.flight= 11.5
+    
   ) %>%                    
-  crossing(.,dur.flight=1:12) %>% 
   mutate(scenario = row_number(),                 # Add scenario column with row numbers
          n_rep = 1000)                            # Add n_rep column with value 1000
 
@@ -296,6 +298,7 @@ results <- scenarios %>%
   purrr::map(~detect_fun(df=.x)) 
 tictoc::toc()
 
+map(results,2)
 
 #UK sim fig
 UK_fig <- map_dfr(results, 3, .id= "scenario") %>% 
