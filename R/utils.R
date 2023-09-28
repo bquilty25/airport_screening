@@ -154,7 +154,7 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
                                                       .data$prop_symp_at_entry_relevant))
  
    infection_histories_count <-
-    dplyr::summarise(
+    dplyr::summarise( 
       infection_histories,
       count_symp_at_exit_relevant = (1.0 - prop.asy/100) * sum(.data$found_at_exit_relevant),
       count_symp_at_exit_irrelevant = (1.0 - prop.asy/100) * sum(.data$found_at_exit_irrelevant),
@@ -235,7 +235,7 @@ generate_travellers <- function(input, i) {
 #' being detected as such at different stages of airline travel.
 
 #Generate probs
-generate_probabilities <- function(travellers) { browser()               
+generate_probabilities <- function(travellers) { #browser()               
   travellers %>%
     tidyr::pivot_longer(
       cols = c(
@@ -264,7 +264,7 @@ generate_probabilities <- function(travellers) { browser()
 }
 
 #Generate counts
-generate_count <- function(travellers) { browser()               
+generate_count <- function(travellers) { #browser()               
   travellers %>%
     tidyr::pivot_longer(
       cols = c(

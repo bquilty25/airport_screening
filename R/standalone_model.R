@@ -79,7 +79,7 @@ detect_fun <- function(df){
   travellers <- generate_travellers(df, i = rep(100, df$n_rep))
   probs <- generate_probabilities(travellers)
   counts <- generate_count(travellers)
-  
+  #browser()
   est_df <- data.frame(CI = apply(X = probs[, -1], 
                                   MARGIN = 2, 
                                   FUN = make_ci_label)) %>%
@@ -102,28 +102,51 @@ detect_fun <- function(df){
   
   est_df
   
+  count_df <- data.frame(CI = apply(X = counts[, -1], 
+                                  MARGIN = 2, 
+                                  FUN = make_ci_label)) %>%
+    rownames_to_column(var = "name") %>%
+    mutate(name = factor(name,
+                         levels = c("infection_histories_count.count_symp_at_exit_relevant",                                
+                                    "infection_histories_count.count_symp_at_exit_irrelevant",
+                                    "infection_histories_count.count_symp_at_entry_relevant",
+                                    "infection_histories_count.count_symp_at_entry_irrelevant",
+                                    "infection_histories_count.count_undetected_relevant" ),
+                         labels = c("Detected at exit relevent",
+                                    "Detected at exit irrelevent",
+                                    "Detected on entry relevent",
+                                    "Detected at entry irrelevent",
+                                    "Not detected relevent"),
+                         ordered = TRUE)) %>%
+    arrange(name) %>%
+    rename(`Detection outcome` = name,
+           `Estimate (95% CI)`  = CI)
+  
+  count_df
+  
   ###### Waffle plot #######
   
   waffle_labels <- data.frame(
     desc = factor(c(rep("detected at exit screening relevent",
-                        round(probs$prop_symp_at_exit_relevant)[1]),
+                        round(probs$infection_histories_prop.prop_symp_at_exit_relevant)[1]),
+                    
                    
                      rep("detected at entry screening relevent",
-                        round(probs$prop_symp_at_entry_relevant)[1]),
+                        round(probs$infection_histories_prop.prop_symp_at_entry_relevant)[1]),
                    
                      rep("detected at exit screening irrelevant",
-                       round(probs$prop_symp_at_exit_irrelevant)[1]),
+                       round(probs$infection_histories_prop.prop_symp_at_exit_irrelevant)[1]),
                     
                     rep("detected at entry screening irrelevant",
-                        round(probs$prop_symp_at_entry_irrelevant)[1]),
+                        round(probs$infection_histories_prop.prop_symp_at_entry_irrelevant)[1]),
                     
                     rep("not detected relevent",
                         # this is here to make sure we always sum to 100
                         #round(100*(1 - (probs$prob_det_exit + probs$prob_det_entry)),2))),
-                        100 - (round(probs$prop_symp_at_exit_relevant[1]) + 
-                                 round(probs$prop_symp_at_entry_relevant[1]) +
-                                 round(probs$prop_symp_at_exit_irrelevant[1]) +
-                                 round(probs$prop_symp_at_entry_irrelevant)[1]))),
+                        100 - (round(probs$infection_histories_prop.prop_symp_at_exit_relevant[1]) + 
+                                 round(probs$infection_histories_prop.prop_symp_at_entry_relevant[1]) +
+                                 round(probs$infection_histories_prop.prop_symp_at_exit_irrelevant[1]) +
+                                 round(probs$infection_histories_prop.prop_symp_at_entry_irrelevant)[1]))),
                   ordered = T)) %>%
     mutate(
       desc = factor(desc,
@@ -216,7 +239,8 @@ detect_fun <- function(df){
   #browser()
   return(list(res=est_df,
               plot=waffle_plot,
-              prop=probs))
+              prop=probs,
+             count=count_df ))
 }
 
 
