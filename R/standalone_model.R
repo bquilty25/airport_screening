@@ -244,6 +244,56 @@ detect_fun <- function(df){
 }
 
 
+########### UK sim ##########################################################
+
+#41,365 visitors form China to the UK Q1 2020 
+
+
+#Data for UK sim 
+scenarios <- pathogen_parameters %>%
+  filter(name == "Custom") %>%                    # Select scenarios with name "Custom"                       
+  mutate(
+    sens.exit = 0,
+    sens.entry = 86,
+    prop_fever = 0.05,        #Proportion of travelers that have fever 
+    n_travellers = 41365,       #Number of travelers
+    dur.flight= 11.5
+    
+  ) %>%                    
+  mutate(scenario = row_number(),                 # Add scenario column with row numbers
+         n_rep = 1000)                            # Add n_rep column with value 1000
+
+
+# Run model
+tictoc::tic() 
+results <- scenarios %>% 
+  group_by(scenario) %>% 
+  group_split() %>%
+  purrr::map(~detect_fun(df=.x)) 
+tictoc::toc()
+
+map(results,2)
+
+map(results,1)
+
+
+#UK sim fig
+UK_fig <- map_dfr(results, 4, .id= "scenario") %>% 
+  filter(name == "mean_prob") %>%
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
+  
+  ggplot(aes(x = mu_inc, y = dur.flight, fill = prop_undetected_relevant)) + 
+  geom_tile() +  # Create a heatmap plot using ggplot2
+  labs(y = "Flight duration (Hours)", x = "Incubation Period (Days)") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(1,21,by=1))+
+  scale_y_continuous(breaks=seq(1,12.5,by=1)) +
+  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
+
+UK_fig
+
+######################################################
 
 # Create Data
 scenarios <- pathogen_parameters %>%
@@ -272,7 +322,7 @@ tictoc::toc()
 
 # View results (table and plot)
 
-incubation_fig <- map_dfr(results, 3, .id= "scenario") %>% 
+incubation_fig <- map_dfr(results, 4, .id= "scenario") %>% 
   filter(name == "mean_prob") %>%
   mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
   left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
@@ -294,54 +344,6 @@ map(results,1) %>%
   left_join(scenarios)
 
 map(results,2)
-
-########### UK sim ##########################################################
-
-#41,365 visitors form China to the UK Q1 2020 
-
-
-#Data for UK sim 
-scenarios <- pathogen_parameters %>%
-  filter(name == "Custom") %>%                    # Select scenarios with name "Custom"                       
-  mutate(
-    sens.exit = 0,
-    sens.entry = 86,
-    prop_fever = 0.05,        #Proportion of travelers that have fever 
-    n_travellers = 100,       #Number of travelers
-    dur.flight= 11.5
-    
-  ) %>%                    
-  mutate(scenario = row_number(),                 # Add scenario column with row numbers
-         n_rep = 1000)                            # Add n_rep column with value 1000
-
-
-# Run model
-tictoc::tic() 
-results <- scenarios %>% 
-  group_by(scenario) %>% 
-  group_split() %>%
-  purrr::map(~detect_fun(df=.x)) 
-tictoc::toc()
-
-map(results,2)
-
-map(results,1)
-
-#UK sim fig
-UK_fig <- map_dfr(results, 3, .id= "scenario") %>% 
-  filter(name == "mean_prob") %>%
-  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
-  left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
-  
-  ggplot(aes(x = mu_inc, y = dur.flight, fill = prop_undetected_relevant)) + 
-  geom_tile() +  # Create a heatmap plot using ggplot2
-  labs(y = "Flight duration (Hours)", x = "Incubation Period (Days)") +
-  theme_classic() +
-  scale_x_continuous(breaks=seq(1,21,by=1))+
-  scale_y_continuous(breaks=seq(1,12.5,by=1)) +
-  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
-
-UK_fig
 
 
 

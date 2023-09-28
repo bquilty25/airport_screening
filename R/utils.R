@@ -168,12 +168,12 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
           (.data$found_at_entry_only_irrelevant)
       )
     ) %>%
-    dplyr::mutate(count_undetected_relevant = n_travellers * prop_relevant - (.data$count_symp_at_exit_relevant +
-                                                      .data$count_symp_at_entry_relevant)) 
+    dplyr::mutate(count_undetected_relevant = n_travellers * (prop_fever/100) - (.data$count_symp_at_exit_irrelevant +
+                                                      .data$count_symp_at_entry_irrelevant)) 
   
   
   
-  # return dataframe converted to list object
+  # return data frame converted to list object
   
  return(list(infection_histories_prop=infection_histories_prop,infection_histories_count=infection_histories_count)
  )
@@ -281,9 +281,9 @@ generate_count <- function(travellers) { #browser()
     ) %>%
     dplyr::group_by(.data$screening) %>%
     dplyr::summarise(
-      mean_count = mean(.data$count * 100),
-      lb_count = stats::quantile(probs = 0.025, x = .data$count * 100),
-      ub_count = stats::quantile(probs = 0.975, x = .data$count * 100)
+      mean_count = mean(.data$count),
+      lb_count = stats::quantile(probs = 0.025, x = .data$count),
+      ub_count = stats::quantile(probs = 0.975, x = .data$count )
     ) %>%
     tidyr::pivot_longer(cols = c(
       .data$mean_count,
