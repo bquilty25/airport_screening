@@ -56,9 +56,9 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
   # Generate infection status for each individual (0 = not infected, 1 = infected)
   data.frame(i=1:n_travellers) %>% 
     rowwise() %>% 
-    mutate(fever_status = rbinom(1, size = 1, prob = prop_fever > runif(n=n())),
+    mutate(fever_status = rbinom(n=n(), size = 1, prob = (prop_fever/100) > runif(n=n())),
            relevant_infection_status = ifelse(fever_status == 1, 
-                                             rbinom(1, size = 1, prob = prop_relevant > runif(n=n())), 
+                                             rbinom(n=n(), size = 1, prob = (prop_relevant/100) > runif(n=n())), 
                                              0)) %>% 
     mutate(
       # Generate incubation times for each individual
@@ -92,7 +92,7 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
 calc_probs <- function(dur.flight, mu_inc, sigma_inc,
                        mu_inf, sigma_inf, sens.exit, prop_fever, prop_relevant,
                        sens.entry, prop.asy, sims, n_travellers) {
-  
+ 
   # simulate infection histories
   .args <- as.list(match.call())[-1] # remove fn call
   
@@ -135,7 +135,7 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
   
   # summaries detection outcomes
   
-  infection_histories_summary <-
+  infection_histories_prop <-
     dplyr::summarise(
       infection_histories,
       prop_symp_at_exit_relevant = (1.0 - prop.asy/100) * mean(.data$found_at_exit_relevant),
@@ -152,15 +152,37 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
     ) %>%
     dplyr::mutate(prop_undetected_relevant = 1.0 - (.data$prop_symp_at_exit_relevant +
                                                       .data$prop_symp_at_entry_relevant))
-  
+ 
+   infection_histories_count <-
+    dplyr::summarise(
+      infection_histories,
+      count_symp_at_exit_relevant = (1.0 - prop.asy/100) * sum(.data$found_at_exit_relevant),
+      count_symp_at_exit_irrelevant = (1.0 - prop.asy/100) * sum(.data$found_at_exit_irrelevant),
+      
+      count_symp_at_entry_relevant = (1.0 - prop.asy/100) * sum(
+        (.data$missed_at_exit_relevant & .data$found_at_entry_relevant) |
+          (.data$found_at_entry_only_relevant)
+      ),
+      count_symp_at_entry_irrelevant = (1.0 - prop.asy/100) * sum(
+        (.data$missed_at_exit_irrelevant & .data$found_at_entry_irrelevant) |
+          (.data$found_at_entry_only_irrelevant)
+      )
+    ) %>%
+    dplyr::mutate(count_undetected_relevant = n_travellers * prop_relevant - (.data$count_symp_at_exit_relevant +
+                                                      .data$count_symp_at_entry_relevant)) 
   
   
   
   # return dataframe converted to list object
-  return(
-    as.list(infection_histories_summary)
-  )
+  
+ return(list(infection_histories_prop=infection_histories_prop,infection_histories_count=infection_histories_count)
+ )
 }
+
+#return(
+#  as.list(infection_histories_prop)
+#)
+#}
 
 #' Make confidence interval labels
 #'
@@ -212,17 +234,18 @@ generate_travellers <- function(input, i) {
 #' @return A data.frame giving the probabilities of travellers who are infected
 #' being detected as such at different stages of airline travel.
 
-generate_probabilities <- function(travellers) {
+#Generate probs
+generate_probabilities <- function(travellers) { browser()               
   travellers %>%
     tidyr::pivot_longer(
       cols = c(
-        .data$prop_symp_at_exit_relevant,
-        .data$prop_symp_at_exit_irrelevant,
+        .data$infection_histories_prop.prop_symp_at_exit_relevant,
+        .data$infection_histories_prop.prop_symp_at_exit_irrelevant,
         
-        .data$prop_symp_at_entry_relevant,
+        .data$infection_histories_prop.prop_symp_at_entry_relevant,
+        .data$infection_histories_prop.prop_symp_at_entry_irrelevant,
         
-        .data$prop_symp_at_entry_irrelevant,
-        .data$prop_undetected_relevant
+        .data$infection_histories_prop.prop_undetected_relevant
       ),
       names_to = "screening",
       values_to = "prob"
@@ -236,6 +259,35 @@ generate_probabilities <- function(travellers) {
     tidyr::pivot_longer(cols = c(
       .data$mean_prob,
       .data$lb_prob, .data$ub_prob
+    )) %>%
+    tidyr::pivot_wider(names_from = .data$screening, values_from = .data$value)
+}
+
+#Generate counts
+generate_count <- function(travellers) { browser()               
+  travellers %>%
+    tidyr::pivot_longer(
+      cols = c(
+        .data$infection_histories_count.count_symp_at_exit_relevant,
+        .data$infection_histories_count.count_symp_at_exit_irrelevant,
+        
+        .data$infection_histories_count.count_symp_at_entry_relevant,
+        .data$infection_histories_count.count_symp_at_entry_irrelevant,
+        
+        .data$infection_histories_count.count_undetected_relevant
+      ),
+      names_to = "screening",
+      values_to = "count"
+    ) %>%
+    dplyr::group_by(.data$screening) %>%
+    dplyr::summarise(
+      mean_count = mean(.data$count * 100),
+      lb_count = stats::quantile(probs = 0.025, x = .data$count * 100),
+      ub_count = stats::quantile(probs = 0.975, x = .data$count * 100)
+    ) %>%
+    tidyr::pivot_longer(cols = c(
+      .data$mean_count,
+      .data$lb_count, .data$ub_count
     )) %>%
     tidyr::pivot_wider(names_from = .data$screening, values_from = .data$value)
 }

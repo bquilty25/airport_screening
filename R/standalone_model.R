@@ -66,8 +66,8 @@ pathogen_parameters <- do.call(
       sigma_inc = 4.1,
       mu_inf = 9.1,
       sigma_inf = 14.7,
-      prop.asy = 0.17,
-      prop_relevant = 0.03 # Proportion of fever cases that are COVID
+      prop.asy = 17,
+      prop_relevant = 3 # Proportion of fever cases that are COVID
     )
   )
 )
@@ -78,17 +78,18 @@ pathogen_parameters <- do.call(
 detect_fun <- function(df){
   travellers <- generate_travellers(df, i = rep(100, df$n_rep))
   probs <- generate_probabilities(travellers)
+  counts <- generate_count(travellers)
   
   est_df <- data.frame(CI = apply(X = probs[, -1], 
                                   MARGIN = 2, 
                                   FUN = make_ci_label)) %>%
     rownames_to_column(var = "name") %>%
     mutate(name = factor(name,
-                         levels = c("prop_symp_at_exit_relevant",                                
-                                    "prop_symp_at_exit_irrelevant",
-                                    "prop_symp_at_entry_relevant",
-                                    "prop_symp_at_entry_irrelevant",
-                                    "prop_undetected_relevant" ),
+                         levels = c("infection_histories_prop.prop_symp_at_exit_relevant",                                
+                                    "infection_histories_prop.prop_symp_at_exit_irrelevant",
+                                    "infection_histories_prop.prop_symp_at_entry_relevant",
+                                    "infection_histories_prop.prop_symp_at_entry_irrelevant",
+                                    "infection_histories_prop.prop_undetected_relevant" ),
                          labels = c("Detected at exit relevent",
                                     "Detected at exit irrelevent",
                                     "Detected on entry relevent",
@@ -226,7 +227,7 @@ scenarios <- pathogen_parameters %>%
   mutate(
     sens.exit = 0,
     sens.entry = 86,
-    prop_fever = 0.0005,        #Proportion of travelers that have fever 
+    prop_fever = 0.05,        #Proportion of travelers that have fever 
     n_travellers = 41,365       #Number of travelers
      
   ) %>%                    
@@ -281,8 +282,8 @@ scenarios <- pathogen_parameters %>%
   mutate(
     sens.exit = 0,
     sens.entry = 86,
-    prop_fever = 0.0005,        #Proportion of travelers that have fever 
-    n_travellers = 41365,       #Number of travelers
+    prop_fever = 0.05,        #Proportion of travelers that have fever 
+    n_travellers = 100,       #Number of travelers
     dur.flight= 11.5
     
   ) %>%                    
@@ -299,6 +300,8 @@ results <- scenarios %>%
 tictoc::toc()
 
 map(results,2)
+
+map(results,1)
 
 #UK sim fig
 UK_fig <- map_dfr(results, 3, .id= "scenario") %>% 
