@@ -153,7 +153,8 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
     dplyr::mutate(prop_undetected_relevant = 1.0 - (.data$prop_symp_at_exit_relevant +
                                                       .data$prop_symp_at_entry_relevant))
  
-   infection_histories_count <-
+  
+   infection_histories_count <- #browser()
     dplyr::summarise( 
       infection_histories,
       count_symp_at_exit_relevant = (1.0 - prop.asy/100) * sum(.data$found_at_exit_relevant),
@@ -211,7 +212,7 @@ make_ci_label <- function(x) {
 #' and the proportions that have severe infections upon arrival, and also the
 #' proportion which is infected but undetected upon arrival.
 
-generate_travellers <- function(input, i) {
+generate_travellers <- function(input, i) { #browser()
   as.data.frame(
     do.call(
       calc_probs,
