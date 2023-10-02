@@ -246,18 +246,18 @@ detect_fun <- function(df){
 
 ########### UK sim ##########################################################
 
-#41,365 visitors form China to the UK Q1 2020 
+#441365 visitors form China to the UK Q1 2020 
 
 
 #Data for UK sim 
 scenarios <- pathogen_parameters %>%
   filter(name == "Custom") %>%                    # Select scenarios with name "Custom"                       
   mutate(
-    sens.exit = 0,
+    sens.exit = 60,
     sens.entry = 86,
     prop_fever = 0.05,        #Proportion of travelers that have fever 
-    n_travellers = 41365,       #Number of travelers
-    dur.flight= 11.5
+    n_travellers = 1000,       #Number of travelers
+    dur.flight= 5          #11.5
     
   ) %>%                    
   mutate(scenario = row_number(),                 # Add scenario column with row numbers
@@ -300,10 +300,9 @@ scenarios <- pathogen_parameters %>%
   filter(name == "Custom") %>%                    # Select scenarios with name "Custom"                       
   mutate(
     sens.exit = 0,
-    sens.entry = 86,
-    prop_fever = 0.05,        #Proportion of travelers that have fever 
-    n_travellers = 41,365       #Number of travelers
-     
+    sens.entry = 57,
+    prop_fever = 0.05, #Proportion of travelers that have fever 
+    n_travellers = 1000      #Number of travelers
   ) %>%                    
   crossing(.,dur.flight=1:12) %>% # Create combinations of mu_inc and dur.flight
   mutate(scenario = row_number(),                 # Add scenario column with row numbers
