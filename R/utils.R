@@ -50,7 +50,7 @@ time_to_event <- function(n, mean, var) {
 
 generate_histories <- function(dur.flight, mu_inc, sigma_inc,
                                mu_inf, sigma_inf, sens.exit, prop_fever, prop_relevant,
-                               sens.entry, prop.asy, sims, n_travellers) { browser()
+                               sens.entry, prop.asy, sims, n_travellers) { #browser()
   
   
   # Generate infection status for each individual (0 = not infected, 1 = infected)
@@ -90,8 +90,8 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
 #' @return A data.frame with probabilities of different travel and infection
 #' outcomes.
 calc_probs <- function(dur.flight, mu_inc, sigma_inc,
-                       mu_inf, sigma_inf, sens.exit, sens.entry, prop_relevant,
-                       prop_fever, prop.asy, sims, n_travellers) { #browser()
+                       mu_inf, sigma_inf, sens.exit, sens.entry, prop.asy, 
+                       prop_fever, prop_relevant, sims, n_travellers) { #browser()
  
   # simulate infection histories
   .args <- as.list(match.call())[-1] # remove fn call

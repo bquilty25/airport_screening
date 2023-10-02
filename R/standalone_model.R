@@ -253,11 +253,11 @@ detect_fun <- function(df){
 scenarios <- pathogen_parameters %>%
   filter(name == "Custom") %>%                    # Select scenarios with name "Custom"                       
   mutate(
-    sens.exit = 60,
+    sens.exit = 0,
     sens.entry = 86,
     prop_fever = 0.05,        #Proportion of travelers that have fever 
-    n_travellers = 1000,       #Number of travelers
-    dur.flight= 5          #11.5
+    n_travellers = 10000,       #Number of travelers
+    dur.flight= 11.5         #11.5
     
   ) %>%                    
   mutate(scenario = row_number(),                 # Add scenario column with row numbers
