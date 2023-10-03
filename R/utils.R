@@ -114,11 +114,11 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
       symp_at_exit = .data$incu < .data$flight.departure,
       symp_at_entry = .data$incu < .data$flight.arrival,
       
-      symp_fever_relevant_at_exit = .data$symp_at_exit & .data$exit_screening_label & .data$fever_status == 1 & .data$relevant_infection_status == 1,
-      symp_fever_relevant_at_entry = .data$symp_at_entry & .data$entry_screening_label & .data$fever_status == 1 & .data$relevant_infection_status == 1,
+      symp_fever_relevant_at_exit = .data$symp_at_exit & .data$fever_status == 1 & .data$relevant_infection_status == 1,
+      symp_fever_relevant_at_entry = .data$symp_at_entry & .data$fever_status == 1 & .data$relevant_infection_status == 1,
       
-      symp_fever_irrelevant_at_exit = .data$symp_at_exit & .data$exit_screening_label & .data$fever_status == 1 & .data$relevant_infection_status == 0,
-      symp_fever_irrelevant_at_entry = .data$symp_at_entry & .data$entry_screening_label & .data$fever_status == 1 & .data$relevant_infection_status == 0,
+      symp_fever_irrelevant_at_exit = .data$symp_at_exit & .data$fever_status == 1 & .data$relevant_infection_status == 0,
+      symp_fever_irrelevant_at_entry = .data$symp_at_entry & .data$fever_status == 1 & .data$relevant_infection_status == 0,
       
       found_at_exit_relevant = .data$symp_fever_relevant_at_exit & .data$exit_screening_label,
       found_at_exit_irrelevant = .data$symp_fever_irrelevant_at_exit & .data$exit_screening_label,
