@@ -91,7 +91,7 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
 #' outcomes.
 calc_probs <- function(dur.flight, mu_inc, sigma_inc,
                        mu_inf, sigma_inf, sens.exit, sens.entry, prop.asy, 
-                       prop_fever, prop_relevant, sims, n_travellers) { #browser()
+                       prop_fever, prop_relevant, sims, n_travellers) { browser()
  
   # simulate infection histories
   .args <- as.list(match.call())[-1] # remove fn call
@@ -135,7 +135,7 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
   
   # summaries detection outcomes
   
-  infection_histories_prop <-
+  infection_histories_prop <- 
     dplyr::summarise(
       infection_histories,
       prop_symp_at_exit_relevant = (1.0 - prop.asy/100) * mean(.data$found_at_exit_relevant),
@@ -154,7 +154,7 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
                                                       .data$prop_symp_at_entry_relevant))
  
   
-   infection_histories_count <- #browser()
+   infection_histories_count <-
     dplyr::summarise( 
       infection_histories,
       count_symp_at_exit_relevant = (1.0 - prop.asy/100) * sum(.data$found_at_exit_relevant),
@@ -169,8 +169,8 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
           (.data$found_at_entry_only_irrelevant)
       )
     ) %>%
-    dplyr::mutate(count_undetected_relevant = n_travellers * (prop_fever/100) - (.data$count_symp_at_exit_irrelevant +
-                                                      .data$count_symp_at_entry_irrelevant)) 
+      dplyr::mutate(count_undetected_relevant = n_travellers * (prop_fever/100) * (prop_relevant/100) - (.data$count_symp_at_exit_relevant +
+                                                                                  .data$count_symp_at_entry_relevant)) 
   
   
   
