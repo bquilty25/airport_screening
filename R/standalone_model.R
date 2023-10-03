@@ -76,7 +76,7 @@ pathogen_parameters <- do.call(
 
 ###### Detect function ##########
 detect_fun <- function(df){
-  travellers <- generate_travellers(df, i = rep(100, df$n_rep))
+  travellers <- generate_travellers(df, i = rep(50000, df$n_rep))
   probs <- generate_probabilities(travellers)
   counts <- generate_count(travellers)
   #browser()
@@ -256,9 +256,7 @@ scenarios <- pathogen_parameters %>%
     sens.exit = 0,
     sens.entry = 100,
     prop_fever = 0.05,        #Proportion of travelers that have fever 
-    n_travellers = 50000,       #Number of travelers
     dur.flight= 11.5
-    
   ) %>%                    
   mutate(scenario = row_number(),                 # Add scenario column with row numbers
          n_rep = 1000)                            # Add n_rep column with value 1000
@@ -302,8 +300,6 @@ scenarios <- pathogen_parameters %>%
     sens.exit = 0,
     sens.entry = 86,
     prop_fever = 0.05,        #Proportion of travelers that have fever 
-    n_travellers = 41,365       #Number of travelers
-     
   ) %>%                    
   crossing(.,dur.flight=1:12) %>% # Create combinations of mu_inc and dur.flight
   mutate(scenario = row_number(),                 # Add scenario column with row numbers

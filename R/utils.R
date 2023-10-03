@@ -50,23 +50,22 @@ time_to_event <- function(n, mean, var) {
 
 generate_histories <- function(dur.flight, mu_inc, sigma_inc,
                                mu_inf, sigma_inf, sens.exit, prop_fever, prop_relevant,
-                               sens.entry, prop.asy, sims, n_travellers) { #browser()
+                               sens.entry, prop.asy, sims) { browser()
   
   
   # Generate infection status for each individual (0 = not infected, 1 = infected)
-  data.frame(i=1:n_travellers) %>% 
-    rowwise() %>% 
-    mutate(fever_status = rbinom(n=n(), size = 1, prob = (prop_fever/100) > runif(n=n())),
+  
+    tibble(fever_status = rbinom(n=sims, size = 1, prob = prop_fever/100),
            relevant_infection_status = ifelse(fever_status == 1, 
-                                             rbinom(n=n(), size = 1, prob = (prop_relevant/100) > runif(n=n())), 
+                                             rbinom(n= sims, size = 1, prob = prop_relevant/100), 
                                              0)) %>% 
     mutate(
       # Generate incubation times for each individual
-      incu = time_to_event(n = n(), mean = mu_inc, var = sigma_inc),
-      inf = time_to_event(n(), mu_inf, sigma_inf),
+      incu = time_to_event(n = sims, mean = mu_inc, var = sigma_inc),
+      inf = time_to_event(sims, mu_inf, sigma_inf),
       
       # Generate flight departure and arrival times
-      flight.departure = stats::runif(n(), min = 0, max = 2 * (.data$incu + .data$inf)),
+      flight.departure = stats::runif(sims, min = 0, max = 2 * (.data$incu + .data$inf)),
       flight.arrival = .data$flight.departure + dur.flight
     )
 }
@@ -91,7 +90,7 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
 #' outcomes.
 calc_probs <- function(dur.flight, mu_inc, sigma_inc,
                        mu_inf, sigma_inf, sens.exit, sens.entry, prop.asy, 
-                       prop_fever, prop_relevant, sims, n_travellers) { browser()
+                       prop_fever, prop_relevant, sims) { #browser()
  
   # simulate infection histories
   .args <- as.list(match.call())[-1] # remove fn call
@@ -134,12 +133,13 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
     )
   
   # summaries detection outcomes
-  
-  infection_histories_prop <- 
+  browser()
+  infection_histories_prop <- infection_histories %>% 
+    ungroup() %>% 
     dplyr::summarise(
-      infection_histories,
       prop_symp_at_exit_relevant = (1.0 - prop.asy/100) * mean(.data$found_at_exit_relevant),
       prop_symp_at_exit_irrelevant = (1.0 - prop.asy/100) * mean(.data$found_at_exit_irrelevant),
+      
       
       prop_symp_at_entry_relevant = (1.0 - prop.asy/100) * mean(
         (.data$missed_at_exit_relevant & .data$found_at_entry_relevant) |
@@ -154,9 +154,9 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
                                                       .data$prop_symp_at_entry_relevant))
  
   
-   infection_histories_count <-
+   infection_histories_count <-infection_histories %>% 
+     ungroup() %>% 
     dplyr::summarise( 
-      infection_histories,
       count_symp_at_exit_relevant = (1.0 - prop.asy/100) * sum(.data$found_at_exit_relevant),
       count_symp_at_exit_irrelevant = (1.0 - prop.asy/100) * sum(.data$found_at_exit_irrelevant),
       
@@ -169,7 +169,7 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
           (.data$found_at_entry_only_irrelevant)
       )
     ) %>%
-      dplyr::mutate(count_undetected_relevant = n_travellers * (prop_fever/100) * (prop_relevant/100) - (.data$count_symp_at_exit_relevant +
+      dplyr::mutate(count_undetected_relevant = mean(sims) * (prop_fever/100) * (prop_relevant/100) - (.data$count_symp_at_exit_relevant +
                                                                                   .data$count_symp_at_entry_relevant)) 
   
   
@@ -219,7 +219,7 @@ generate_travellers <- function(input, i) { #browser()
       list(
         input$dur.flight, input$mu_inc, input$sigma_inc,
         input$mu_inf, input$sigma_inf, input$sens.exit,
-        input$sens.entry, input$prop.asy, input$prop_fever, input$prop_relevant,input$n_travellers,
+        input$sens.entry, input$prop.asy, input$prop_fever, input$prop_relevant,
         sims = i
       )
     )
