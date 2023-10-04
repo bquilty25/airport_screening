@@ -79,7 +79,7 @@ pathogen_parameters <- do.call(
 
 ###### Detect function ##########
 detect_fun <- function(df){
-  travellers <- generate_travellers(df, i = rep(766044 , df$n_rep)) #Number of travelers 
+  travellers <- generate_travellers(df, i = rep(10000 , df$n_rep)) #Number of travelers 
   probs <- generate_probabilities(travellers)
   counts <- generate_count(travellers)
   #browser()
@@ -298,7 +298,71 @@ UK_fig <- map_dfr(results, 4, .id= "scenario") %>%
 
 UK_fig
 
-######################################################
+
+################Incubation period####################################
+
+#Params for Incubation period sim
+scenarios <- pathogen_parameters %>%
+  filter(name == "Custom") %>%
+  select(-prop_relevant) %>%
+  mutate(sens.exit = 0,
+         sens.entry = 86,
+         prop_fever = 0.05) %>%
+  crossing(prop_relevant = 1:50, dur.flight = 1:12) %>%
+  mutate(scenario = row_number(),
+         n_rep = 1000)
+
+tictoc::tic() 
+results <- scenarios %>% 
+  group_by(scenario) %>% 
+  group_split() %>%
+  purrr::map(~detect_fun(df=.x)) 
+tictoc::toc()
+ 
+
+#Incubation figure
+incubation_fig <- map_dfr(results, 3, .id= "scenario") %>% 
+  filter(name == "mean_prob") %>%
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
+  ggplot(aes(x = prop_relevant, y = dur.flight, fill = infection_histories_prop.prop_undetected_relevant)) + 
+  geom_tile() +  # Create a heatmap plot using ggplot2
+  labs(y = "Flight duration (Hours)", x = "Incubation Period (Days)") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(1,21,by=1))+
+  scale_y_continuous(breaks=seq(1,12.5,by=1)) +
+  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
+
+incubation_fig
+
+
+
+
+
+
+
+
+
+
+################Asymptomatic individuals####################################
+
+################Entry screening sensitivity####################################
+
+################Prevalence of relevant pathogen####################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Create Data
 scenarios <- pathogen_parameters %>%
