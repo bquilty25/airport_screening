@@ -1,19 +1,22 @@
+#Dependencies 
 pacman::p_load(purrr,furrr,emojifont,gridExtra,knitr,kableExtra,tidyverse,dtplyr,tidyfast,data.table)
 
+#Read in utils
 source("R/utils.R")
 
+#Pathogen parameters 
 pathogen_parameters <- do.call(
   rbind,
   list(
-    data.frame(
-      name = "nCoV-2019",
-      # (Li et al. (2020) NEJM)
-      mu_inc = 5.2,
-      sigma_inc = 4.1,
-      mu_inf = 9.1,
-      sigma_inf = 14.7,
-      prop.asy = 0.17,
-      prop_relevant = 0.03
+    data.frame(                         
+      name = "nCoV-2019", #COVID-19
+      # (Li et al. (2020) NEJM) 
+      mu_inc = 5.2, #Mean incubation period 
+      sigma_inc = 4.1, #Variance
+      mu_inf = 9.1, #Time from symptom onset to hospitalization 
+      sigma_inf = 14.7, #Variance 
+      prop.asy = 17,  # Proportion of asymptomatic infections
+      prop_relevant = 3 #Proportion of relevant infections 
     ),
     data.frame(
       name = "SARS-like (2002)",
@@ -21,8 +24,8 @@ pathogen_parameters <- do.call(
       sigma_inc = 16.7,
       mu_inf = 3.8,
       sigma_inf = 6.0,
-      prop.asy = 0.0,
-      prop_relevant = 0.03
+      prop.asy = 0,
+      prop_relevant = 3
     ),
     data.frame(
       name = "Flu A/H1N1-like (2009)",
@@ -30,8 +33,8 @@ pathogen_parameters <- do.call(
       sigma_inc = 1.05,
       mu_inf = 9.3,
       sigma_inf = 0.7,
-      prop.asy = 0.16,# https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4586318/
-      prop_relevant = 0.03 # 
+      prop.asy = 16,# https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4586318/
+      prop_relevant = 3 
     ),
     data.frame(
       name = "MERS-like (2012)",
@@ -43,8 +46,8 @@ pathogen_parameters <- do.call(
       # nolint end
       mu_inf = 5.0, # https://www.nejm.org/doi/10.1056/NEJMoa1306742
       sigma_inf = 7.5,
-      prop.asy = 0.21,
-      prop_relevant = 0.03
+      prop.asy = 21,
+      prop_relevant = 3
       # nolint begin
       # https://doi.org/10.1016/j.tmaid.2018.12.003
       # citing https://www.who.int/csr/disease/coronavirus_infections/
@@ -57,8 +60,8 @@ pathogen_parameters <- do.call(
       sigma_inc = 5.0,
       mu_inf = 5.0,
       sigma_inf = 5.0,
-      prop.asy = 0.5,
-      prop_relevant = 0.03
+      prop.asy = 5,
+      prop_relevant = 3
     ),
     data.frame(
       name = "Custom",
@@ -67,7 +70,7 @@ pathogen_parameters <- do.call(
       mu_inf = 9.1,
       sigma_inf = 14.7,
       prop.asy = 17,
-      prop_relevant = 3 # Proportion of fever cases that are COVID
+      prop_relevant = 3 
     )
   )
 )
@@ -76,11 +79,13 @@ pathogen_parameters <- do.call(
 
 ###### Detect function ##########
 detect_fun <- function(df){
-  travellers <- generate_travellers(df, i = rep(50000, df$n_rep))
+  travellers <- generate_travellers(df, i = rep(766044 , df$n_rep)) #Number of travelers 
   probs <- generate_probabilities(travellers)
   counts <- generate_count(travellers)
   #browser()
-  est_df <- data.frame(CI = apply(X = probs[, -1], 
+  
+  #Probabilties data frame
+  est_df <- data.frame(CI = apply(X = probs[, -1],               
                                   MARGIN = 2, 
                                   FUN = make_ci_label)) %>%
     rownames_to_column(var = "name") %>%
@@ -102,6 +107,7 @@ detect_fun <- function(df){
   
   est_df
   
+  #Counts data frame
   count_df <- data.frame(CI = apply(X = counts[, -1], 
                                   MARGIN = 2, 
                                   FUN = make_ci_label)) %>%
@@ -123,6 +129,7 @@ detect_fun <- function(df){
            `Estimate (95% CI)`  = CI)
   
   count_df
+  
   
   ###### Waffle plot #######
   
@@ -246,17 +253,17 @@ detect_fun <- function(df){
 
 ########### UK sim ##########################################################
 
-#41,365 visitors form China to the UK Q1 2020 
+#41365 visitors form China to the UK Q1 2020 
 
 
 #Data for UK sim 
 scenarios <- pathogen_parameters %>%
-  filter(name == "Custom") %>%                    # Select scenarios with name "Custom"                       
+  filter(name == "Custom") %>%                    #Filter for pathogen                      
   mutate(
-    sens.exit = 0,
-    sens.entry = 100,
+    sens.exit = 0, #Sensitivity of exit screening
+    sens.entry = 86, #Sensitivity of entry screening
     prop_fever = 0.05,        #Proportion of travelers that have fever 
-    dur.flight= 11.5
+    dur.flight= 11.5     #Duration of flight
   ) %>%                    
   mutate(scenario = row_number(),                 # Add scenario column with row numbers
          n_rep = 1000)                            # Add n_rep column with value 1000

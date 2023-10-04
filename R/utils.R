@@ -50,23 +50,23 @@ time_to_event <- function(n, mean, var) {
 
 generate_histories <- function(dur.flight, mu_inc, sigma_inc,
                                mu_inf, sigma_inf, sens.exit, prop_fever, prop_relevant,
-                               sens.entry, prop.asy, sims) { browser()
+                               sens.entry, prop.asy, sims) { #browser()
   
-  
-  # Generate infection status for each individual (0 = not infected, 1 = infected)
   
    # tibble(fever_status = rbinom(n=sims, size = 1, prob = prop_fever/100),
         #   relevant_infection_status = ifelse(fever_status == 1, 
                                        #      rbinom(n= sims, size = 1, prob = prop_relevant/100), 
                                           #   0)) %>% 
-      
+     
+   #Generate infection status for each individual (0 = not infected, 1 = infected)
       data.frame(i=1:mean(sims)) %>% 
       rowwise() %>% 
-      mutate(fever_status = rbinom(1, size = 1, prob = prop_fever/100),
-             relevant_infection_status = ifelse(fever_status == 1, 
+      mutate(fever_status = rbinom(1, size = 1, prob = prop_fever/100), # Generate fever_status 
+             relevant_infection_status = ifelse(fever_status == 1,  # Generate relevant_infection_status based on fever_status
                                                 rbinom(1, size = 1, prob = prop_relevant/100), 
                                                 0)) %>% 
     mutate(
+      
       # Generate incubation times for each individual
       incu = time_to_event(n = n(), mean = mu_inc, var = sigma_inc),
       inf = time_to_event(n(), mu_inf, sigma_inf),
@@ -117,72 +117,73 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
   infection_histories <-
     dplyr::mutate(
       infection_histories,
-      symp_at_exit = .data$incu < .data$flight.departure,
-      symp_at_entry = .data$incu < .data$flight.arrival,
+      symp_at_exit = .data$incu < .data$flight.departure, #Symptomatic at EXIT
+      symp_at_entry = .data$incu < .data$flight.arrival,  #Symptomatic at ENTRY 
       
-      symp_fever_relevant_at_exit = .data$symp_at_exit & .data$fever_status == 1 & .data$relevant_infection_status == 1,
-      symp_fever_relevant_at_entry = .data$symp_at_entry & .data$fever_status == 1 & .data$relevant_infection_status == 1,
+      symp_fever_relevant_at_exit = .data$symp_at_exit & .data$fever_status == 1 & .data$relevant_infection_status == 1,   #Symptomatic with relevant infection at EXIT
+      symp_fever_relevant_at_entry = .data$symp_at_entry & .data$fever_status == 1 & .data$relevant_infection_status == 1, #Symptomatic with relevant infection at ENTRY
       
-      symp_fever_irrelevant_at_exit = .data$symp_at_exit & .data$fever_status == 1 & .data$relevant_infection_status == 0,
-      symp_fever_irrelevant_at_entry = .data$symp_at_entry & .data$fever_status == 1 & .data$relevant_infection_status == 0,
+      symp_fever_irrelevant_at_exit = .data$symp_at_exit & .data$fever_status == 1 & .data$relevant_infection_status == 0, #Symptomatic with irrelevant infection at EXIT
+      symp_fever_irrelevant_at_entry = .data$symp_at_entry & .data$fever_status == 1 & .data$relevant_infection_status == 0, #Symptomatic with irrelevant infection at ENTRY
       
-      found_at_exit_relevant = .data$symp_fever_relevant_at_exit & .data$exit_screening_label,
-      found_at_exit_irrelevant = .data$symp_fever_irrelevant_at_exit & .data$exit_screening_label,
+      found_at_exit_relevant = .data$symp_fever_relevant_at_exit & .data$exit_screening_label, #Identified at EXIT with relevant infection 
+      found_at_exit_irrelevant = .data$symp_fever_irrelevant_at_exit & .data$exit_screening_label, #Identified at EXIT with irrelevant infection 
       
-      missed_at_exit_relevant = .data$symp_fever_relevant_at_exit & !.data$exit_screening_label,
-      missed_at_exit_irrelevant = .data$symp_fever_irrelevant_at_exit & !.data$exit_screening_label,
+      missed_at_exit_relevant = .data$symp_fever_relevant_at_exit & !.data$exit_screening_label, #Missed at EXIT with relevant infection
+      missed_at_exit_irrelevant = .data$symp_fever_irrelevant_at_exit & !.data$exit_screening_label, #Missed at EXIT with irrelevant infection
       
-      found_at_entry_relevant = .data$symp_fever_relevant_at_entry & .data$entry_screening_label,
-      found_at_entry_irrelevant = .data$symp_fever_irrelevant_at_entry & .data$entry_screening_label,
+      found_at_entry_relevant = .data$symp_fever_relevant_at_entry & .data$entry_screening_label, #Identified at ENTRY with relevant infection
+      found_at_entry_irrelevant = .data$symp_fever_irrelevant_at_entry & .data$entry_screening_label, #Identified at ENTRY with irrelevant infection 
       
-      found_at_entry_only_relevant = .data$found_at_entry_relevant & (!.data$symp_fever_relevant_at_exit),
-      found_at_entry_only_irrelevant = .data$found_at_entry_irrelevant & (!.data$symp_fever_irrelevant_at_exit)
+      found_at_entry_only_relevant = .data$found_at_entry_relevant & (!.data$symp_fever_relevant_at_exit), #Found at ENTRY only with relevant infection
+      found_at_entry_only_irrelevant = .data$found_at_entry_irrelevant & (!.data$symp_fever_irrelevant_at_exit) #Found at ENTRY only with irrelevant infection
     )
   
   # summaries detection outcomes
-  browser()
+  #browser()
+  
+  #Proportion infection histories
   infection_histories_prop <- infection_histories %>% 
     ungroup() %>% 
     dplyr::summarise(
-      prop_symp_at_exit_relevant = (1.0 - prop.asy/100) * mean(.data$found_at_exit_relevant),
-      prop_symp_at_exit_irrelevant = (1.0 - prop.asy/100) * mean(.data$found_at_exit_irrelevant),
+      prop_symp_at_exit_relevant = (1.0 - prop.asy/100) * mean(.data$found_at_exit_relevant), #Proportion symptomatic at EXIT with relevant infection
+      prop_symp_at_exit_irrelevant = (1.0 - prop.asy/100) * mean(.data$found_at_exit_irrelevant), #Proportion symptomatic at EXIT with irrelevant infection 
       
       
-      prop_symp_at_entry_relevant = (1.0 - prop.asy/100) * mean(
-        (.data$missed_at_exit_relevant & .data$found_at_entry_relevant) |
+      prop_symp_at_entry_relevant = (1.0 - prop.asy/100) * mean(                   #Proportion symptomatic at ENTRY with relevant infection 
+        (.data$missed_at_exit_relevant & .data$found_at_entry_relevant) |          
           (.data$found_at_entry_only_relevant)
       ),
-      prop_symp_at_entry_irrelevant = (1.0 - prop.asy/100) * mean(
+      prop_symp_at_entry_irrelevant = (1.0 - prop.asy/100) * mean(                 #Proportion symptomatic at ENTRY with irrelevant infection
         (.data$missed_at_exit_irrelevant & .data$found_at_entry_irrelevant) |
           (.data$found_at_entry_only_irrelevant)
       )
     ) %>%
-    dplyr::mutate(prop_undetected_relevant = 1.0 - (.data$prop_symp_at_exit_relevant +
+    dplyr::mutate(prop_undetected_relevant = 1.0 - (.data$prop_symp_at_exit_relevant +    #Proportion undetected with relevant infection
                                                       .data$prop_symp_at_entry_relevant))
  
-  
+  #Counts infection histories
    infection_histories_count <-infection_histories %>% 
      ungroup() %>% 
     dplyr::summarise( 
-      count_symp_at_exit_relevant = (1.0 - prop.asy/100) * sum(.data$found_at_exit_relevant),
-      count_symp_at_exit_irrelevant = (1.0 - prop.asy/100) * sum(.data$found_at_exit_irrelevant),
+      count_symp_at_exit_relevant = (1.0 - prop.asy/100) * sum(.data$found_at_exit_relevant),     #Num. symptomatic at EXIT with relevant infection
+      count_symp_at_exit_irrelevant = (1.0 - prop.asy/100) * sum(.data$found_at_exit_irrelevant), #Num. symptomatic at EXIT with irrelevant infection
       
-      count_symp_at_entry_relevant = (1.0 - prop.asy/100) * sum(
+      count_symp_at_entry_relevant = (1.0 - prop.asy/100) * sum(                                 #Num. symptomatic at ENTRY with relevant infection
         (.data$missed_at_exit_relevant & .data$found_at_entry_relevant) |
           (.data$found_at_entry_only_relevant)
       ),
-      count_symp_at_entry_irrelevant = (1.0 - prop.asy/100) * sum(
+      count_symp_at_entry_irrelevant = (1.0 - prop.asy/100) * sum(                                #Num. symptomatic at ENTRY with irrelevant infection
         (.data$missed_at_exit_irrelevant & .data$found_at_entry_irrelevant) |
           (.data$found_at_entry_only_irrelevant)
       )
     ) %>%
       dplyr::mutate(count_undetected_relevant = mean(sims) * (prop_fever/100) * (prop_relevant/100) - (.data$count_symp_at_exit_relevant +
-                                                                                  .data$count_symp_at_entry_relevant)) 
+                                                                                  .data$count_symp_at_entry_relevant))  #Num. undetected with relevant infection
   
   
   
   # return data frame converted to list object
-  
  return(list(infection_histories_prop=infection_histories_prop,infection_histories_count=infection_histories_count)
  )
 }
