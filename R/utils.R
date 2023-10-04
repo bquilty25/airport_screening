@@ -55,17 +55,24 @@ generate_histories <- function(dur.flight, mu_inc, sigma_inc,
   
   # Generate infection status for each individual (0 = not infected, 1 = infected)
   
-    tibble(fever_status = rbinom(n=sims, size = 1, prob = prop_fever/100),
-           relevant_infection_status = ifelse(fever_status == 1, 
-                                             rbinom(n= sims, size = 1, prob = prop_relevant/100), 
-                                             0)) %>% 
+   # tibble(fever_status = rbinom(n=sims, size = 1, prob = prop_fever/100),
+        #   relevant_infection_status = ifelse(fever_status == 1, 
+                                       #      rbinom(n= sims, size = 1, prob = prop_relevant/100), 
+                                          #   0)) %>% 
+      
+      data.frame(i=1:mean(sims)) %>% 
+      rowwise() %>% 
+      mutate(fever_status = rbinom(1, size = 1, prob = prop_fever/100),
+             relevant_infection_status = ifelse(fever_status == 1, 
+                                                rbinom(1, size = 1, prob = prop_relevant/100), 
+                                                0)) %>% 
     mutate(
       # Generate incubation times for each individual
-      incu = time_to_event(n = sims, mean = mu_inc, var = sigma_inc),
-      inf = time_to_event(sims, mu_inf, sigma_inf),
+      incu = time_to_event(n = n(), mean = mu_inc, var = sigma_inc),
+      inf = time_to_event(n(), mu_inf, sigma_inf),
       
       # Generate flight departure and arrival times
-      flight.departure = stats::runif(sims, min = 0, max = 2 * (.data$incu + .data$inf)),
+      flight.departure = stats::runif(n(), min = 0, max = 2 * (.data$incu + .data$inf)),
       flight.arrival = .data$flight.departure + dur.flight
     )
 }
