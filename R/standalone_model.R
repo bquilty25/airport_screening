@@ -77,9 +77,9 @@ pathogen_parameters <- do.call(
 
 
 
-###### Detect function ##########
+###### Detect function ########## 41365
 detect_fun <- function(df){
-  travellers <- generate_travellers(df, i = rep(10000 , df$n_rep)) #Number of travelers 
+  travellers <- generate_travellers(df, i = rep(41365 , df$n_rep)) #Number of travelers 
   probs <- generate_probabilities(travellers)
   counts <- generate_count(travellers)
   #browser()
@@ -258,7 +258,7 @@ detect_fun <- function(df){
 
 #Data for UK sim 
 scenarios <- pathogen_parameters %>%
-  filter(name == "Custom") %>%                    #Filter for pathogen                      
+  filter(name == "nCoV-2019") %>%                    #Filter for pathogen                      
   mutate(
     sens.exit = 0, #Sensitivity of exit screening
     sens.entry = 86, #Sensitivity of entry screening

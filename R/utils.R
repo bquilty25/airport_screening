@@ -179,7 +179,7 @@ calc_probs <- function(dur.flight, mu_inc, sigma_inc,
       )
     ) %>%
       dplyr::mutate(count_undetected_relevant = mean(sims) * (prop_fever/100) * (prop_relevant/100) - (.data$count_symp_at_exit_relevant +
-                                                                                  .data$count_symp_at_entry_relevant))  #Num. undetected with relevant infection
+                                                                                                      .data$count_symp_at_entry_relevant))  #Num. undetected with relevant infection
   
   
   
