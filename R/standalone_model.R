@@ -16,7 +16,7 @@ pathogen_parameters <- do.call(
       mu_inf = 9.1, #Time from symptom onset to hospitalization 
       sigma_inf = 14.7, #Variance 
       prop.asy = 17,  # Proportion of asymptomatic infections
-      prop_relevant = 3 #Proportion of relevant infections 
+      prop_relevant = 10.4 #Proportion of relevant infections 
     ),
     data.frame(
       name = "SARS-like (2002)",
@@ -79,12 +79,12 @@ pathogen_parameters <- do.call(
 
 ###### Detect function ########## 41365
 detect_fun <- function(df){
-  travellers <- generate_travellers(df, i = rep(41365 , df$n_rep)) #Number of travelers 
+  travellers <- generate_travellers(df, i = rep(100000 , df$n_rep)) #Number of travelers 
   probs <- generate_probabilities(travellers)
   counts <- generate_count(travellers)
   #browser()
   
-  #Probabilties data frame
+  #Probabilities data frame
   est_df <- data.frame(CI = apply(X = probs[, -1],               
                                   MARGIN = 2, 
                                   FUN = make_ci_label)) %>%
@@ -263,7 +263,7 @@ scenarios <- pathogen_parameters %>%
     sens.exit = 0, #Sensitivity of exit screening
     sens.entry = 86, #Sensitivity of entry screening
     prop_fever = 0.05,        #Proportion of travelers that have fever 
-    dur.flight= 11.5     #Duration of flight
+    dur.flight= 12     #Duration of flight
   ) %>%                    
   mutate(scenario = row_number(),                 # Add scenario column with row numbers
          n_rep = 1000)                            # Add n_rep column with value 1000
@@ -299,16 +299,19 @@ UK_fig <- map_dfr(results, 4, .id= "scenario") %>%
 UK_fig
 
 
-################Incubation period####################################
+################ Prevalence of relevant pathogen ####################################
 
-#Params for Incubation period sim
+#Params for prop_relevant sim
+#100000
+
 scenarios <- pathogen_parameters %>%
-  filter(name == "Custom") %>%
+  filter(name == "nCoV-2019") %>%
   select(-prop_relevant) %>%
   mutate(sens.exit = 0,
          sens.entry = 86,
-         prop_fever = 0.05) %>%
-  crossing(prop_relevant = 1:50, dur.flight = 1:12) %>%
+         prop_fever = 0.05,
+         dur.flight = 6) %>%
+  crossing(prop_relevant = 1:50) %>%
   mutate(scenario = row_number(),
          n_rep = 1000)
 
@@ -320,21 +323,25 @@ results <- scenarios %>%
 tictoc::toc()
  
 
-#Incubation figure
-incubation_fig <- map_dfr(results, 3, .id= "scenario") %>% 
-  filter(name == "mean_prob") %>%
-  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+#prop_relevant figure
+relevant_fig <- map_dfr(results, 4, .id= "scenario") %>% 
+  filter(`Detection outcome` == "Detected on entry relevent") %>%
+  mutate(scenario = as.integer(scenario)) %>% 
+  mutate(mean_est = as.numeric(substr(`Estimate (95% CI)`, 1, 1))) %>% # Convert scenario ID to integer
   left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
-  ggplot(aes(x = prop_relevant, y = dur.flight, fill = infection_histories_prop.prop_undetected_relevant)) + 
-  geom_tile() +  # Create a heatmap plot using ggplot2
-  labs(y = "Flight duration (Hours)", x = "Incubation Period (Days)") +
+  
+  ggplot(aes(x = prop_relevant, y = mean_est)) + 
+  geom_line() + 
+  geom_point() +
+  labs(y = "Number of travlers detected on entry", x = "prevalence of relevant pathogen") +
   theme_classic() +
-  scale_x_continuous(breaks=seq(1,21,by=1))+
-  scale_y_continuous(breaks=seq(1,12.5,by=1)) +
-  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
+  #scale_x_continuous(breaks=seq(1,50,by=10))+
+  #scale_y_continuous(breaks=seq(1,12.5,by=1)) +
+  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))+
+  scale_x_continuous(expand = c(0, 0), limits = c(1, NA)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA))
 
-incubation_fig
-
+relevant_fig
 
 
 
