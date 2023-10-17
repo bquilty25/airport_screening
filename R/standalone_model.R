@@ -64,13 +64,13 @@ pathogen_parameters <- do.call(
       prop_relevant = 3
     ),
     data.frame(
-      name = "Custom",
-      mu_inc = 5.2,
-      sigma_inc = 4.1,
+      name = "pathogen X",
+      mu_inc = 6.3,
+      sigma_inc = 0.1,
       mu_inf = 9.1,
       sigma_inf = 14.7,
-      prop.asy = 17,
-      prop_relevant = 3 
+      prop.asy = 31.8,
+      prop_relevant = 1.9 
     )
   )
 )
@@ -306,7 +306,7 @@ UK_fig
 #Cross incubation period with relevant proportion
 
 scenarios <- pathogen_parameters %>%
-  filter(name == "nCoV-2019") %>%
+  filter(name == "pathogen X") %>%
   select(-prop_relevant, -mu_inc) %>%
   mutate(sens.exit = 0,
          sens.entry = 86,
@@ -347,7 +347,7 @@ fig.1
 #Cross incubation period with Asymptomatic
 
 scenarios <- pathogen_parameters %>%
-  filter(name == "nCoV-2019") %>%
+  filter(name == "pathogen X") %>%
   select(-prop.asy, -mu_inc) %>%
   mutate(sens.exit = 0,
          sens.entry = 86,
@@ -365,7 +365,7 @@ results <- scenarios %>%
 tictoc::toc()
 
 
-#prop_relevant figure
+#figure
 fig.2 <- map_dfr(results, 3, .id= "scenario") %>% 
   filter(name == "mean_prob") %>%
   mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
@@ -386,12 +386,12 @@ fig.2
 #Cross incubation period with flight duration
 
 scenarios <- pathogen_parameters %>%
-  filter(name == "nCoV-2019") %>%
-  select(-dur.flight, -mu_inc) %>%
+  filter(name == "pathogen X") %>%
+  select( -mu_inc) %>%
   mutate(sens.exit = 0,
          sens.entry = 86,
          prop_fever = 0.05) %>%
-  crossing(dur.flight = 1:12, mu_inc=1:21) %>%
+  crossing(dur.flight=1:12, mu_inc=1:21) %>%
   mutate(scenario = row_number(),
          n_rep = 1000)
 
@@ -403,12 +403,12 @@ results <- scenarios %>%
 tictoc::toc()
 
 
-#prop_relevant figure
+#figure
 fig.3 <- map_dfr(results, 3, .id= "scenario") %>% 
   filter(name == "mean_prob") %>%
   mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
   left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
-  ggplot(aes(x = mu_inc, y = prop.asy, fill = infection_histories_prop.prop_undetected_relevant)) + 
+  ggplot(aes(x = mu_inc, y = dur.flight, fill = infection_histories_prop.prop_undetected_relevant)) + 
   geom_tile() +  # Create a heatmap plot using ggplot2
   labs(y = "Flight Duration (hours)", x = "Incubation Period (Days)") +
   theme_classic() +
@@ -425,8 +425,7 @@ fig.3
 #Cross incubation period with flight duration
 
 scenarios <- pathogen_parameters %>%
-  filter(name == "nCoV-2019") %>%
-  select(-sens.exit, -sens.entry) %>%
+  filter(name == "pathogen X") %>%
   mutate(prop_fever = 0.05,
          dur.flight = 6) %>%
   crossing(sens.exit = 1:12, sens.entry1:21) %>%
@@ -441,14 +440,14 @@ results <- scenarios %>%
 tictoc::toc()
 
 
-#prop_relevant figure
+#figure
 fig.4 <- map_dfr(results, 3, .id= "scenario") %>% 
   filter(name == "mean_prob") %>%
   mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
   left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
   ggplot(aes(x = mu_inc, y = prop.asy, fill = infection_histories_prop.prop_undetected_relevant)) + 
   geom_tile() +  # Create a heatmap plot using ggplot2
-  labs(y = "Flight Duration (hours)", x = "Incubation Period (Days)") +
+  labs(y = "Sensitivty of exit screening", x = "Sensitivty of entry screening") +
   theme_classic() +
   scale_x_continuous(breaks=seq(1,21,by=1))+
   scale_y_continuous(breaks=seq(1,12,by=1)) +
@@ -458,6 +457,15 @@ fig.4
 
 
 
+
+
+
+
+
+
+##############################################################################################
+
+#Misc stuff
 
 #Misc line graph
 relevant_fig <- map_dfr(results, 4, .id= "scenario") %>% 
@@ -478,14 +486,6 @@ relevant_fig <- map_dfr(results, 4, .id= "scenario") %>%
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA))
 
 relevant_fig
-
-
-
-
-
-##############################################################################################
-
-#Misc stuff
 
 
 # Create Data
