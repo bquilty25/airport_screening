@@ -299,19 +299,20 @@ UK_fig <- map_dfr(results, 4, .id= "scenario") %>%
 UK_fig
 
 
-################ Prevalence of relevant pathogen ####################################
+################ Prevalence of relevant pathogen and incubation period ####################################
 
 #Params for prop_relevant sim
 #100000
+#Cross incubation period with relevant proportion
 
 scenarios <- pathogen_parameters %>%
   filter(name == "nCoV-2019") %>%
-  select(-prop_relevant) %>%
+  select(-prop_relevant, -mu_inc) %>%
   mutate(sens.exit = 0,
          sens.entry = 86,
          prop_fever = 0.05,
          dur.flight = 6) %>%
-  crossing(prop_relevant = 1:50) %>%
+  crossing(prop_relevant = 0:6, mu_inc=1:21) %>%
   mutate(scenario = row_number(),
          n_rep = 1000)
 
@@ -324,6 +325,141 @@ tictoc::toc()
  
 
 #prop_relevant figure
+fig.1 <- map_dfr(results, 3, .id= "scenario") %>% 
+  filter(name == "mean_prob") %>%
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
+  ggplot(aes(x = mu_inc, y = prop_relevant, fill = infection_histories_prop.prop_undetected_relevant)) + 
+  geom_tile() +  # Create a heatmap plot using ggplot2
+  labs(y = "Proportion of relevant pathogen (%)", x = "Incubation Period (Days)") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(1,21,by=1))+
+  scale_y_continuous(breaks=seq(0,6,by=1)) +
+  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
+
+fig.1
+
+
+
+################Asymptomatic individuals####################################
+
+#Params for asym sim
+#Cross incubation period with Asymptomatic
+
+scenarios <- pathogen_parameters %>%
+  filter(name == "nCoV-2019") %>%
+  select(-prop.asy, -mu_inc) %>%
+  mutate(sens.exit = 0,
+         sens.entry = 86,
+         prop_fever = 0.05,
+         dur.flight = 6) %>%
+  crossing(prop.asyt = 0:6, mu_inc=1:21) %>%
+  mutate(scenario = row_number(),
+         n_rep = 1000)
+
+tictoc::tic() 
+results <- scenarios %>% 
+  group_by(scenario) %>% 
+  group_split() %>%
+  purrr::map(~detect_fun(df=.x)) 
+tictoc::toc()
+
+
+#prop_relevant figure
+fig.2 <- map_dfr(results, 3, .id= "scenario") %>% 
+  filter(name == "mean_prob") %>%
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
+  ggplot(aes(x = mu_inc, y = prop.asy, fill = infection_histories_prop.prop_undetected_relevant)) + 
+  geom_tile() +  # Create a heatmap plot using ggplot2
+  labs(y = "Proportion of asymptomatic infections (%)", x = "Incubation Period (Days)") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(1,21,by=1))+
+  scale_y_continuous(breaks=seq(0,0,by=1)) +
+  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
+
+fig.2
+
+
+######################Flight Duration#########################################
+#Params for flight duration sim
+#Cross incubation period with flight duration
+
+scenarios <- pathogen_parameters %>%
+  filter(name == "nCoV-2019") %>%
+  select(-dur.flight, -mu_inc) %>%
+  mutate(sens.exit = 0,
+         sens.entry = 86,
+         prop_fever = 0.05) %>%
+  crossing(dur.flight = 1:12, mu_inc=1:21) %>%
+  mutate(scenario = row_number(),
+         n_rep = 1000)
+
+tictoc::tic() 
+results <- scenarios %>% 
+  group_by(scenario) %>% 
+  group_split() %>%
+  purrr::map(~detect_fun(df=.x)) 
+tictoc::toc()
+
+
+#prop_relevant figure
+fig.3 <- map_dfr(results, 3, .id= "scenario") %>% 
+  filter(name == "mean_prob") %>%
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
+  ggplot(aes(x = mu_inc, y = prop.asy, fill = infection_histories_prop.prop_undetected_relevant)) + 
+  geom_tile() +  # Create a heatmap plot using ggplot2
+  labs(y = "Flight Duration (hours)", x = "Incubation Period (Days)") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(1,21,by=1))+
+  scale_y_continuous(breaks=seq(1,12,by=1)) +
+  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
+
+fig.3
+
+
+################Entry screening sensitivity####################################
+
+#Params for flight duration sim
+#Cross incubation period with flight duration
+
+scenarios <- pathogen_parameters %>%
+  filter(name == "nCoV-2019") %>%
+  select(-sens.exit, -sens.entry) %>%
+  mutate(prop_fever = 0.05,
+         dur.flight = 6) %>%
+  crossing(sens.exit = 1:12, sens.entry1:21) %>%
+  mutate(scenario = row_number(),
+         n_rep = 1000)
+
+tictoc::tic() 
+results <- scenarios %>% 
+  group_by(scenario) %>% 
+  group_split() %>%
+  purrr::map(~detect_fun(df=.x)) 
+tictoc::toc()
+
+
+#prop_relevant figure
+fig.4 <- map_dfr(results, 3, .id= "scenario") %>% 
+  filter(name == "mean_prob") %>%
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
+  ggplot(aes(x = mu_inc, y = prop.asy, fill = infection_histories_prop.prop_undetected_relevant)) + 
+  geom_tile() +  # Create a heatmap plot using ggplot2
+  labs(y = "Flight Duration (hours)", x = "Incubation Period (Days)") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(1,21,by=1))+
+  scale_y_continuous(breaks=seq(1,12,by=1)) +
+  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
+
+fig.4
+
+
+
+
+#Misc line graph
 relevant_fig <- map_dfr(results, 4, .id= "scenario") %>% 
   filter(`Detection outcome` == "Detected on entry relevent") %>%
   mutate(scenario = as.integer(scenario)) %>% 
@@ -347,28 +483,9 @@ relevant_fig
 
 
 
+##############################################################################################
 
-
-
-
-################Asymptomatic individuals####################################
-
-################Entry screening sensitivity####################################
-
-################Prevalence of relevant pathogen####################################
-
-
-
-
-
-
-
-
-
-
-
-
-
+#Misc stuff
 
 
 # Create Data
