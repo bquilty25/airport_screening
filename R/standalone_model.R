@@ -70,7 +70,7 @@ pathogen_parameters <- do.call(
       mu_inf = 9.1,
       sigma_inf = 14.7,
       prop.asy = 31.8,
-      prop_relevant = 1.9 
+      prop_relevant = 38 
     )
   )
 )
@@ -341,24 +341,24 @@ fig.1
 
 
 
-################Asymptomatic individuals####################################
+################Asymptomatic individuals#################################### Thissssss
 
 #Params for asym sim
 #Cross incubation period with Asymptomatic
 
-scenarios <- pathogen_parameters %>%
+scenarios_3h_50pct <- pathogen_parameters %>%
   filter(name == "pathogen X") %>%
   select(-prop.asy, -mu_inc) %>%
   mutate(sens.exit = 0,
-         sens.entry = 86,
+         sens.entry = 50,
          prop_fever = 0.05,
-         dur.flight = 6) %>%
-  crossing(prop.asyt = 0:6, mu_inc=1:21) %>%
+         dur.flight = 3) %>%
+  crossing(prop.asy = seq(from=0,to=96,by=10), mu_inc=1:21) %>%
   mutate(scenario = row_number(),
          n_rep = 1000)
 
 tictoc::tic() 
-results <- scenarios %>% 
+results_3h_50pct <- scenarios_3h_50pct %>% 
   group_by(scenario) %>% 
   group_split() %>%
   purrr::map(~detect_fun(df=.x)) 
@@ -366,7 +366,7 @@ tictoc::toc()
 
 
 #figure
-fig.2 <- map_dfr(results, 3, .id= "scenario") %>% 
+fig_3h_50pct<- map_dfr(results_3h_50pct, 3, .id= "scenario") %>% 
   filter(name == "mean_prob") %>%
   mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
   left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
@@ -375,10 +375,15 @@ fig.2 <- map_dfr(results, 3, .id= "scenario") %>%
   labs(y = "Proportion of asymptomatic infections (%)", x = "Incubation Period (Days)") +
   theme_classic() +
   scale_x_continuous(breaks=seq(1,21,by=1))+
-  scale_y_continuous(breaks=seq(0,0,by=1)) +
+  scale_y_continuous(breaks=seq(0,96,by=10)) +
   theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
 
-fig.2
+#Short haul
+fig_3h_25pct #25% sensitivity done
+fig_3h_50pct #50% sensitivity
+
+map_dfr(results_3h_25pct, 4, .id= "scenario")
+
 
 
 ######################Flight Duration#########################################
