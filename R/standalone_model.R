@@ -303,21 +303,21 @@ UK_fig
 
 #Params for prop_relevant sim
 #100000
-#Cross incubation period with relevant proportion
-
-scenarios <- pathogen_parameters %>%
+#Cross
+scenarios <-  pathogen_parameters %>%
   filter(name == "pathogen X") %>%
-  select(-prop_relevant, -mu_inc) %>%
+  select(-prop.asy, -mu_inc) %>%
   mutate(sens.exit = 0,
-         sens.entry = 86,
+         sens.entry = 25,
          prop_fever = 0.05,
-         dur.flight = 6) %>%
-  crossing(prop_relevant = 0:6, mu_inc=1:21) %>%
+         dur.flight = 3) %>%
+  crossing(prop.asy = seq(from=0,to=96,by=10), mu_inc=1:21) %>%
   mutate(scenario = row_number(),
          n_rep = 1000)
 
+
 tictoc::tic() 
-results <- scenarios %>% 
+results_3_25pct <- scenarios %>% 
   group_by(scenario) %>% 
   group_split() %>%
   purrr::map(~detect_fun(df=.x)) 
@@ -325,23 +325,25 @@ tictoc::toc()
  
 
 #prop_relevant figure
-fig.1 <- map_dfr(results, 3, .id= "scenario") %>% 
+fig_3h_25pct <- map_dfr(results_3_25pct , 3, .id= "scenario") %>% 
   filter(name == "mean_prob") %>%
   mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
   left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
-  ggplot(aes(x = mu_inc, y = prop_relevant, fill = infection_histories_prop.prop_undetected_relevant)) + 
+  ggplot(aes(x = mu_inc, y = prop.asy, fill = infection_histories_prop.prop_undetected_relevant)) + 
   geom_tile() +  # Create a heatmap plot using ggplot2
   labs(y = "Proportion of relevant pathogen (%)", x = "Incubation Period (Days)") +
   theme_classic() +
   scale_x_continuous(breaks=seq(1,21,by=1))+
-  scale_y_continuous(breaks=seq(0,6,by=1)) +
+  scale_y_continuous(breaks=seq(0,96,by=1)) +
   theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
 
-fig.1
+#Short haul
+fig_3h_25pct #25% sensitivity 
+fig_3h_50pct #50% sensitivity
 
 
 
-################Asymptomatic individuals#################################### Thissssss
+################Asymptomatic individuals################################################
 
 #Params for asym sim
 #Cross incubation period with Asymptomatic
@@ -379,7 +381,7 @@ fig_3h_50pct<- map_dfr(results_3h_50pct, 3, .id= "scenario") %>%
   theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
 
 #Short haul
-fig_3h_25pct #25% sensitivity done
+fig_3h_25pct #25% sensitivity 
 fig_3h_50pct #50% sensitivity
 
 map_dfr(results_3h_25pct, 4, .id= "scenario")
