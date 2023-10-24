@@ -269,7 +269,7 @@ generate_probabilities <- function(travellers) { #browser()
       .data$mean_prob,
       .data$lb_prob, .data$ub_prob
     )) %>%
-    tidyr::pivot_wider(names_from = .data$screening, values_from = .data$value)
+    tidyr::pivot_wider(names_from = .data$screening, values_from = .data$value) 
 }
 
 #Generate counts

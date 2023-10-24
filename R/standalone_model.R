@@ -1,6 +1,8 @@
 #Dependencies 
 pacman::p_load(purrr,furrr,emojifont,gridExtra,knitr,kableExtra,tidyverse,dtplyr,tidyfast,data.table)
 
+library(ggdist)
+
 #Read in utils
 source("R/utils.R")
 
@@ -70,7 +72,7 @@ pathogen_parameters <- do.call(
       mu_inf = 9.1,
       sigma_inf = 14.7,
       prop.asy = 31.8,
-      prop_relevant = 38 
+      prop_relevant = 100 
     )
   )
 )
@@ -79,7 +81,7 @@ pathogen_parameters <- do.call(
 
 ###### Detect function ########## 41365
 detect_fun <- function(df){
-  travellers <- generate_travellers(df, i = rep(100000 , df$n_rep)) #Number of travelers 
+  travellers <- generate_travellers(df, i = rep(50 , df$n_rep)) #Number of travelers 
   probs <- generate_probabilities(travellers)
   counts <- generate_count(travellers)
   #browser()
@@ -301,15 +303,13 @@ UK_fig
 
 ################ Prevalence of relevant pathogen and incubation period ####################################
 
-#Params for prop_relevant sim
-#100000
-#Cross
+#Scenario
 scenarios <-  pathogen_parameters %>%
   filter(name == "pathogen X") %>%
   select(-prop.asy, -mu_inc) %>%
   mutate(sens.exit = 0,
-         sens.entry = 25,
-         prop_fever = 0.05,
+         sens.entry = 86,
+         prop_fever = 100,
          dur.flight = 3) %>%
   crossing(prop.asy = seq(from=0,to=96,by=10), mu_inc=1:21) %>%
   mutate(scenario = row_number(),
@@ -317,7 +317,7 @@ scenarios <-  pathogen_parameters %>%
 
 
 tictoc::tic() 
-results_3_25pct <- scenarios %>% 
+results_3h_inc_asym <- scenarios %>% 
   group_by(scenario) %>% 
   group_split() %>%
   purrr::map(~detect_fun(df=.x)) 
@@ -325,21 +325,55 @@ tictoc::toc()
  
 
 #prop_relevant figure
-fig_3h_25pct <- map_dfr(results_3_25pct , 3, .id= "scenario") %>% 
+fig_3h_inc_asym <- map_dfr(results_3h_inc_asym, 3, .id= "scenario") %>% 
   filter(name == "mean_prob") %>%
   mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
   left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
-  ggplot(aes(x = mu_inc, y = prop.asy, fill = infection_histories_prop.prop_undetected_relevant)) + 
-  geom_tile() +  # Create a heatmap plot using ggplot2
-  labs(y = "Proportion of relevant pathogen (%)", x = "Incubation Period (Days)") +
+  ggplot(aes(x = mu_inc, y = prop.asy, fill = infection_histories_prop.prop_undetected_relevant/100)) + 
+  geom_tile() + 
+  scale_fill_gradient(low = "grey90", high = "#D55E00") +
+  labs(y = "Asymptomatic proportion (%)", x = "Incubation Period (Days)") +
   theme_classic() +
   scale_x_continuous(breaks=seq(1,21,by=1))+
-  scale_y_continuous(breaks=seq(0,96,by=1)) +
-  theme(axis.text = element_text(size = 15),axis.title = element_text(size = 20))
+  scale_y_continuous(breaks=seq(0,96,by=10)) +
+  guides(fill = guide_colourbar(title = "Mean proportion of\ninfected travellers\nundetected")) +
+  theme(axis.text= element_text(size = 15),axis.title = element_text(size = 20),legend.title = element_text(size = 15))
 
-#Short haul
-fig_3h_25pct #25% sensitivity 
-fig_3h_50pct #50% sensitivity
+
+#Figures space 
+
+################################################################
+#Short haul 
+
+################################################################
+#medium haul
+
+################################################################
+#Long haul
+
+
+
+#ggdist
+map_dfr(results_3h_inc_asym, 3, .id= "scenario") %>% 
+  filter(name == "mean_prob") %>%
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
+  ggplot(aes(x = mu_inc, y = infection_histories_prop.prop_undetected_relevant/100, color = as.character(prop.asy))) + 
+  stat_lineribbon()
+  
+
+map_dfr(results_3h_inc_asym, 3, .id= "scenario") %>% 
+  filter(name == "mean_prob" | name == "lb_prob"| name == "ub_prob") %>%
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(.,scenarios, by = "scenario") %>%
+  pivot_wider(names_from = name.x, values_from = infection_histories_prop.prop_undetected_relevant) %>%# Add original scenario parameters
+  
+  ggplot(aes(x = mu_inc, y = mean_prob/100, color = as.character(prop.asy))) +
+  geom_line() +
+  geom_ribbon(aes(ymin=lb_prob/100, ymax=ub_prob/100, fill=as.character(prop.asy)), 
+              alpha=0.3, colour=NA)
+
+
 
 
 
