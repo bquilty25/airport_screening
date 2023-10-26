@@ -221,16 +221,17 @@ make_ci_label <- function(x) {
 #' proportion which is infected but undetected upon arrival.
 
 generate_travellers <- function(input, i) { #browser()
-  as.data.frame(
-    do.call(
+  map_dfr(
+    i,
+    ~as.data.frame(do.call(
       calc_probs,
       list(
         input$dur.flight, input$mu_inc, input$sigma_inc,
         input$mu_inf, input$sigma_inf, input$sens.exit,
         input$sens.entry, input$prop.asy, input$prop_fever, input$prop_relevant,
-        sims = i
+        sims = .x
       )
-    )
+    ))
   )
 }
 

@@ -2,6 +2,8 @@
 pacman::p_load(purrr,furrr,emojifont,gridExtra,knitr,kableExtra,tidyverse,dtplyr,tidyfast,data.table)
 
 library(ggdist)
+library(ggthemes)
+library(gridExtra)
 
 #Read in utils
 source("R/utils.R")
@@ -81,7 +83,9 @@ pathogen_parameters <- do.call(
 
 ###### Detect function ########## 41365
 detect_fun <- function(df){
-  travellers <- generate_travellers(df, i = rep(50 , df$n_rep)) #Number of travelers 
+  start <- Sys.time()
+  
+  travellers <- generate_travellers(df, i = rep(50 , df$n_rep)) #Number of travelers
   probs <- generate_probabilities(travellers)
   counts <- generate_count(travellers)
   #browser()
@@ -243,7 +247,7 @@ detect_fun <- function(df){
           legend.text     = element_text(size=12)) +
     guides(color=guide_legend(ncol=1)) 
   
-  waffle_plot
+  #waffle_plot
   
   #browser()
   return(list(res=est_df,
@@ -310,60 +314,80 @@ scenarios <-  pathogen_parameters %>%
   mutate(sens.exit = 0,
          sens.entry = 86,
          prop_fever = 100,
-         dur.flight = 3) %>%
+         dur.flight = 12) %>%
   crossing(prop.asy = seq(from=0,to=96,by=10), mu_inc=1:21) %>%
   mutate(scenario = row_number(),
          n_rep = 1000)
 
 
 tictoc::tic() 
-results_3h_inc_asym <- scenarios %>% 
+results_12h_inc_asym <- scenarios %>% 
   group_by(scenario) %>% 
   group_split() %>%
   purrr::map(~detect_fun(df=.x)) 
 tictoc::toc()
  
 
-#prop_relevant figure
-fig_3h_inc_asym <- map_dfr(results_3h_inc_asym, 3, .id= "scenario") %>% 
+#Heat map figure
+fig_12h_inc_asym  <- map_dfr(results_12h_inc_asym, 3, .id= "scenario") %>% 
   filter(name == "mean_prob") %>%
   mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
   left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
   ggplot(aes(x = mu_inc, y = prop.asy, fill = infection_histories_prop.prop_undetected_relevant/100)) + 
   geom_tile() + 
-  scale_fill_gradient(low = "grey90", high = "#D55E00") +
+  scale_fill_gradient(low = "green", high = "red") +
   labs(y = "Asymptomatic proportion (%)", x = "Incubation Period (Days)") +
   theme_classic() +
   scale_x_continuous(breaks=seq(1,21,by=1))+
   scale_y_continuous(breaks=seq(0,96,by=10)) +
-  guides(fill = guide_colourbar(title = "Mean proportion of\ninfected travellers\nundetected")) +
+  guides(fill = guide_colourbar(title = "Mean proportion of\nundetected\ninfected travellers")) +
+  theme(axis.text= element_text(size = 15),axis.title = element_text(size = 20),legend.title = element_text(size = 15)) +
+  coord_cartesian(xlim = c(1, NA), ylim = c(0, NA))
+
+#ggdist
+fig_12h_dist <-map_dfr(results_12h_inc_asym, 3, .id= "scenario") %>% 
+  #filter(name == "mean_prob") %>%
+  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
+  left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
+  ggplot(aes(x = mu_inc, y = infection_histories_prop.prop_undetected_relevant/100)) + 
+  stat_lineribbon(.width = 0.95, aes(fill=as.character(prop.asy)), alpha= 0.4, color = "black")+
+  labs(y = "Mean proportion of undetected travellers", x = "Incubation Period (Days)",
+       fill = "Asymptomatic\nproportion (%)") +
+  theme_calc() +
+  scale_x_continuous(breaks=seq(1,21,by=1),expand = c(0, 0))+
+  scale_y_continuous(breaks=seq(0,1,by=0.10), labels = scales::percent, expand = c(0, 0))+
   theme(axis.text= element_text(size = 15),axis.title = element_text(size = 20),legend.title = element_text(size = 15))
 
+  
 
-#Figures space 
+
+#Figures house 
 
 ################################################################
 #Short haul 
+results_3h_inc_asym #results
+fig_3h_inc_asym #heat map
+fig_3h_dist #dist 
 
 ################################################################
 #medium haul
+results_6h_inc_asym #results
+fig_6h_inc_asym #heat map
+fig_6h_dist  #dist
 
 ################################################################
 #Long haul
+results_12h_inc_asym #results
+fig_12h_inc_asym #heat map
+fig_12h_dist  #dist
 
+################################################################
 
-
-#ggdist
-map_dfr(results_3h_inc_asym, 3, .id= "scenario") %>% 
-  filter(name == "mean_prob") %>%
-  mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
-  left_join(.,scenarios, by = "scenario") %>%  # Add original scenario parameters
-  ggplot(aes(x = mu_inc, y = infection_histories_prop.prop_undetected_relevant/100, color = as.character(prop.asy))) + 
-  stat_lineribbon()
+grid.arrange(fig_6h_dist, fig_12h_dist)
   
 
 map_dfr(results_3h_inc_asym, 3, .id= "scenario") %>% 
-  filter(name == "mean_prob" | name == "lb_prob"| name == "ub_prob") %>%
+  # filter(name == "mean_prob" | name == "lb_prob"| name == "ub_prob") %>%
   mutate(scenario = as.integer(scenario)) %>%    # Convert scenario ID to integer
   left_join(.,scenarios, by = "scenario") %>%
   pivot_wider(names_from = name.x, values_from = infection_histories_prop.prop_undetected_relevant) %>%# Add original scenario parameters
